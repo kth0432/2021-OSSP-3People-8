@@ -1,0 +1,460 @@
+import pygame
+import random
+from collections import deque   # 양쪽 끝에서 빠르게 추가와 삭제를 할 수 있는 리스트류 컨테이너, 여기서는 appendleft를 위해 사용함
+
+from sprites import (MasterSprite, Ship, Alien, Missile, BombPowerup,   # sprites.py
+                     ShieldPowerup, Explosion, Siney, Spikey, Fasty,
+                     Roundy, Crawly)
+from database import Database                                           # database.py
+from load import load_image, load_sound, load_music                     # load.py
+
+if not pygame.mixer:                                                    # 메인 실행 후 mixer(sound)가 없으면 터미널 출력
+    print('Warning, sound disabled')
+if not pygame.font:
+    print('Warning, fonts disabled')
+
+BLUE = (0, 0, 255)
+RED = (255, 0, 0)
+
+direction = {None: (0, 0), pygame.K_w: (0, -2), pygame.K_s: (0, 2),     # 비행기가 이동하는 정도, w를 눌렀을 때는 좌우 0, 아래로 2만큼, k_(원하는 키)로 설정
+             pygame.K_a: (-2, 0), pygame.K_d: (2, 0)}
+
+
+class Keyboard(object):     # 기록 입력할 때 이름을 입력하기 위한 함수
+    keys = {pygame.K_a: 'A', pygame.K_b: 'B', pygame.K_c: 'C', pygame.K_d: 'D',
+            pygame.K_e: 'E', pygame.K_f: 'F', pygame.K_g: 'G', pygame.K_h: 'H',
+            pygame.K_i: 'I', pygame.K_j: 'J', pygame.K_k: 'K', pygame.K_l: 'L',
+            pygame.K_m: 'M', pygame.K_n: 'N', pygame.K_o: 'O', pygame.K_p: 'P',
+            pygame.K_q: 'Q', pygame.K_r: 'R', pygame.K_s: 'S', pygame.K_t: 'T',
+            pygame.K_u: 'U', pygame.K_v: 'V', pygame.K_w: 'W', pygame.K_x: 'X',
+            pygame.K_y: 'Y', pygame.K_z: 'Z'}
+
+
+def main():
+    # Initialize everything
+    pygame.mixer.pre_init(11025, -16, 2, 512)   # 소리 초기값, (frequency, size=기본값, channels=기본값, buffer=기본값)
+    pygame.init()   # pygame을 사용하기 위한 초기화
+    screen = pygame.display.set_mode((500, 500))    # 500x500 화면 set
+    pygame.display.set_caption('Shooting Game')     # 화면 제목
+    pygame.mouse.set_visible(1)     # 0/1 : 마우스 안보임/보임
+
+# Create the background which will scroll and loop over a set of different
+# size stars
+    background = pygame.Surface((500, 2000))    # 500x2000의 이미지 생성(배경)
+    background = background.convert()      # blitting : 이미지를 화면에 나타내기 위한 변환 과정
+    background.fill((0, 0, 0))  # 검은색으로 채움
+    backgroundLoc = 1500    # 배경이 움직이는 위치
+    finalStars = deque()    # 배경에 랜덤하게 뿌릴 별들의 deque
+    for y in range(0, 1500, 30):
+        size = random.randint(2, 5)     # 별 사이즈 랜덤
+        x = random.randint(0, 500 - size)   # 별 가로 위치 랜덤
+        if y <= 500:
+            finalStars.appendleft((x, y + 1500, size))
+        pygame.draw.rect(
+            background, (255, 255, 0), pygame.Rect(x, y, size, size))       # y<=500인 경우 별을 미리 그림 (창 크기만큼 똑같은 별을 그려서 배경이 연속되는 것처럼 보임)
+    while finalStars:
+        x, y, size = finalStars.pop()
+        pygame.draw.rect(
+            background, (255, 255, 0), pygame.Rect(x, y, size, size))       # 나머지 별을 그림
+
+# Display the background
+    screen.blit(background, (0, 0))     # 화면(0, 0) 자리에 background 복사(출력)
+    pygame.display.flip()   # 화면 전부 업데이트
+
+# Prepare game objects
+    speed = 1.5     # 게임 전체 스피드
+    MasterSprite.speed = speed      # sprites의 많은 구조물은 mastersprite(pygame.sprites.Sprites)를 상속받고, 그것들의 속도를 speed로 설정 
+    alienPeriod = 60 / speed        # 외계인(적)이 나오는 주기, 속도가 빠르면 주기가 짧아짐, 밑에 alienPeriod = clockTime // 2 때문에 죽은 코드(?)
+    clockTime = 60  # maximum FPS
+    clock = pygame.time.Clock()     # fps에 따르는 시간(fps를 빠르게 하면 speed가 빨라지는 것과 비슷한 효과를 냄)
+    ship = Ship()      # ship 클래스 인스턴스 생성
+    initialAlienTypes = (Siney, Spikey)     # 첫 스테이지에 나오는 적 종류
+    powerupTypes = (BombPowerup, ShieldPowerup)     # 파워업 종류
+
+    # Sprite groups
+    alldrawings = pygame.sprite.Group()     # group : sprite 관리를 위한 container, 화면에 여러 객체가 등장하는 경우 주로 사용
+    allsprites = pygame.sprite.RenderPlain((ship,))     # renderplain : group과 완전히 같은 기능, group에 (ship,) sprite 저장 
+    MasterSprite.allsprites = allsprites    # load.py의 mastersprite 클래스의 변수 allsprites에 pygame.sprite.RenderPlain((ship,)) 저장
+    Alien.pool = pygame.sprite.Group(
+        [alien() for alien in initialAlienTypes for _ in range(5)])     # 나올 적 종류 set(최대 5개)
+    Alien.active = pygame.sprite.Group()    # 화면상에 있는 적 그룹
+    Missile.pool = pygame.sprite.Group([Missile() for _ in range(10)])  # 발사할 미사일 갯수 set
+    Missile.active = pygame.sprite.Group()      # 화면 상에 있는 미사일 그룹
+    Explosion.pool = pygame.sprite.Group([Explosion() for _ in range(10)])
+    Explosion.active = pygame.sprite.Group()
+    bombs = pygame.sprite.Group()
+    powerups = pygame.sprite.Group()
+
+    # Sounds
+    missile_sound = load_sound('missile.ogg')
+    bomb_sound = load_sound('bomb.ogg')
+    alien_explode_sound = load_sound('alien_explode.ogg')
+    ship_explode_sound = load_sound('ship_explode.ogg')
+    load_music('music_loop.ogg')
+
+    #alienPeriod = clockTime // 2    # fps에 따른 외계인(적)이 나오는 주기
+    curTime = 0
+    aliensThisWave, aliensLeftThisWave, Alien.numOffScreen = 10, 10, 10     # 웨이브 나올 외계인 수, 웨이브 남은 외계인 수, 화면에 보이는 외계인 수(?)
+    wave = 1    # 웨이브, 폭탄 갯수 등 초기값
+    bombsHeld = 3
+    score = 0
+    missilesFired = 0   # 총 미사일 발사 갯수
+    powerupTime = 10 * clockTime    # 
+    powerupTimeLeft = powerupTime
+    betweenWaveTime = 3 * clockTime     # 
+    betweenWaveCount = betweenWaveTime
+    font = pygame.font.Font(None, 36)
+
+    inMenu = True   # 메뉴 화면인지를 나타낼 변수
+    hiScores = Database.getScores()
+    highScoreTexts = [font.render("NAME", 1, RED),      # render : 글씨 출력 (text, size, blod=False, color)
+                      font.render("SCORE", 1, RED),
+                      font.render("ACCURACY", 1, RED)]
+    highScorePos = [highScoreTexts[0].get_rect(
+                      topleft=screen.get_rect().inflate(-100, -100).topleft),
+                    highScoreTexts[1].get_rect(
+                      midtop=screen.get_rect().inflate(-100, -100).midtop),
+                    highScoreTexts[2].get_rect(
+                      topright=screen.get_rect().inflate(-100, -100).topright)]
+    for hs in hiScores:
+        highScoreTexts.extend([font.render(str(hs[x]), 1, BLUE)
+                               for x in range(3)])
+        highScorePos.extend([highScoreTexts[x].get_rect(
+            topleft=highScorePos[x].bottomleft) for x in range(-3, 0)])     # 최고 점수를 가져오는 곳
+
+    title, titleRect = load_image('title.png')
+    titleRect.midtop = screen.get_rect().inflate(0, -200).midtop
+
+    startText = font.render('START GAME', 1, BLUE)
+    startPos = startText.get_rect(midtop=titleRect.inflate(0, 100).midbottom)   # midbottom 등등 : 상대적인 위치
+    hiScoreText = font.render('HIGH SCORES', 1, BLUE)
+    hiScorePos = hiScoreText.get_rect(topleft=startPos.bottomleft)
+    fxText = font.render('SOUND FX ', 1, BLUE)
+    fxPos = fxText.get_rect(topleft=hiScorePos.bottomleft)
+    fxOnText = font.render('ON', 1, RED)
+    fxOffText = font.render('OFF', 1, RED)
+    fxOnPos = fxOnText.get_rect(topleft=fxPos.topright)
+    fxOffPos = fxOffText.get_rect(topleft=fxPos.topright)
+    musicText = font.render('MUSIC', 1, BLUE)
+    musicPos = fxText.get_rect(topleft=fxPos.bottomleft)
+    musicOnText = font.render('ON', 1, RED)
+    musicOffText = font.render('OFF', 1, RED)
+    musicOnPos = musicOnText.get_rect(topleft=musicPos.topright)
+    musicOffPos = musicOffText.get_rect(topleft=musicPos.topright)
+    quitText = font.render('QUIT', 1, BLUE)
+    quitPos = quitText.get_rect(topleft=musicPos.bottomleft)
+    selectText = font.render('*', 1, BLUE)      # 메뉴 화면 select 상태 *
+    selectPos = selectText.get_rect(topright=startPos.topleft)  # * 위치
+    menuDict = {1: startPos, 2: hiScorePos, 3: fxPos, 4: musicPos, 5: quitPos}
+    selection = 1
+    showHiScores = False
+    soundFX = Database.getSound()
+    music = Database.getSound(music=True)                                           # 시작화면, 게임을 구성하기 위한 변수들
+    if music and pygame.mixer:
+        pygame.mixer.music.play(loops=-1)
+
+    while inMenu:   # 메뉴 창
+        clock.tick(clockTime)
+
+        screen.blit(
+            background, (0, 0), area=pygame.Rect(
+                0, backgroundLoc, 500, 500))    # rect(x축, y축, 가로, 세로)
+        backgroundLoc -= speed  # 배경 이동
+        if backgroundLoc - speed <= speed:      # 배경이 계속 보이도록 하는 구문
+            backgroundLoc = 1500
+
+        for event in pygame.event.get():
+            if (event.type == pygame.QUIT):
+                return
+            elif (event.type == pygame.KEYDOWN  # keydown : 키를 눌렀을 때
+                  and event.key == pygame.K_RETURN):    # return -> enter키
+                if showHiScores:
+                    showHiScores = False    # 최고 기록 본 후 메뉴로 돌아왔을 때
+                elif selection == 1:    # play
+                    inMenu = False
+                    ship.initializeKeys()   
+                elif selection == 2:    # hiscores
+                    showHiScores = True
+                elif selection == 3:    # sound fx
+                    soundFX = not soundFX
+                    if soundFX:
+                        missile_sound.play()
+                    Database.setSound(int(soundFX))
+                elif selection == 4 and pygame.mixer:   # music
+                    music = not music
+                    if music:
+                        pygame.mixer.music.play(loops=-1)
+                    else:
+                        pygame.mixer.music.stop()
+                    Database.setSound(int(music), music=True)
+                elif selection == 5:    # main while문 벗어나면서 종료
+                    return
+            elif (event.type == pygame.KEYDOWN      # 메뉴 이동
+                  and event.key == pygame.K_w
+                  and selection > 1
+                  and not showHiScores):
+                selection -= 1
+            elif (event.type == pygame.KEYDOWN
+                  and event.key == pygame.K_s
+                  and selection < len(menuDict)
+                  and not showHiScores):
+                selection += 1
+
+        selectPos = selectText.get_rect(topright=menuDict[selection].topleft)   # selection에 따른 * 위치 조정
+
+        if showHiScores:
+            textOverlays = zip(highScoreTexts, highScorePos)
+        else:
+            textOverlays = zip([startText, hiScoreText, fxText,
+                                musicText, quitText, selectText,
+                                fxOnText if soundFX else fxOffText,
+                                musicOnText if music else musicOffText],
+                               [startPos, hiScorePos, fxPos,
+                                musicPos, quitPos, selectPos,
+                                fxOnPos if soundFX else fxOffPos,
+                                musicOnPos if music else musicOffPos])
+            screen.blit(title, titleRect)
+        for txt, pos in textOverlays:
+            screen.blit(txt, pos)
+        pygame.display.flip()       # 출력할 오버레이 구성 및 업데이트
+
+    while ship.alive:
+        clock.tick(clockTime)
+
+        if aliensLeftThisWave >= 20:    # 웨이브에 잡아야하는 적 수가 20 이상이면 powerup 남은 시간 -1, powerup 남은 시간이 다 되면 랜덤 파워업
+            powerupTimeLeft -= 1
+        if powerupTimeLeft <= 0:
+            powerupTimeLeft = powerupTime
+            random.choice(powerupTypes)().add(powerups, allsprites)
+
+    # Event Handling
+        for event in pygame.event.get():
+            if (event.type == pygame.QUIT
+                or event.type == pygame.KEYDOWN
+                    and event.key == pygame.K_ESCAPE):  # escape -> esc키
+                return
+            elif (event.type == pygame.KEYDOWN
+                  and event.key in direction.keys()):
+                ship.horiz += direction[event.key][0] * speed   # ship.horiz : 비행기의 가로측 위치 좌표, speed에 비례하여 이동
+                ship.vert += direction[event.key][1] * speed
+            elif (event.type == pygame.KEYUP
+                  and event.key in direction.keys()):
+                ship.horiz -= direction[event.key][0] * speed
+                ship.vert -= direction[event.key][1] * speed
+            elif (event.type == pygame.KEYDOWN
+                  and event.key == pygame.K_SPACE):
+                Missile.position(ship.rect.midtop)  # 비행기 위치에 미사일 위치시킴(생성)
+                missilesFired += 1
+                if soundFX:
+                    missile_sound.play()
+            elif (event.type == pygame.KEYDOWN  # 폭탄 사용
+                  and event.key == pygame.K_b):
+                if bombsHeld > 0:
+                    bombsHeld -= 1
+                    newBomb = ship.bomb()
+                    newBomb.add(bombs, alldrawings)
+                    if soundFX:
+                        bomb_sound.play()
+
+    # Collision Detection
+        # Aliens
+        for alien in Alien.active:
+            for bomb in bombs:  # 적이 폭탄에 부딪힌 경우
+                if pygame.sprite.collide_circle(
+                        bomb, alien) and alien in Alien.active:
+                    alien.table()   # remove를 지정해놓은 table 함수
+                    Explosion.position(alien.rect.center)   # 폭파 모션
+                    missilesFired += 1
+                    aliensLeftThisWave -= 1
+                    score += 1
+                    if soundFX:
+                        alien_explode_sound.play()
+            for missile in Missile.active:
+                if pygame.sprite.collide_rect(
+                        missile, alien) and alien in Alien.active:
+                    alien.table()
+                    missile.table()
+                    Explosion.position(alien.rect.center)
+                    aliensLeftThisWave -= 1
+                    score += 1
+                    if soundFX:
+                        alien_explode_sound.play()
+            if pygame.sprite.collide_rect(alien, ship):     # 비행기 적 충돌 경우, 쉴드 없으면 죽음
+                if ship.shieldUp:
+                    alien.table()
+                    Explosion.position(alien.rect.center)
+                    aliensLeftThisWave -= 1
+                    score += 1
+                    missilesFired += 1
+                    ship.shieldUp = False
+                else:
+                    ship.alive = False
+                    ship.remove(allsprites)
+                    Explosion.position(ship.rect.center)
+                    if soundFX:
+                        ship_explode_sound.play()
+
+        # PowerUps
+        for powerup in powerups:
+            if pygame.sprite.collide_circle(powerup, ship):
+                if powerup.pType == 'bomb':
+                    bombsHeld += 1
+                elif powerup.pType == 'shield':
+                    ship.shieldUp = True
+                powerup.kill()
+            elif powerup.rect.top > powerup.area.bottom:
+                powerup.kill()
+
+    # Update Aliens
+        if curTime <= 0 and aliensLeftThisWave > 0:
+            Alien.position()
+            curTime = alienPeriod
+        elif curTime > 0:
+            curTime -= 1
+
+    # Update text overlays
+        waveText = font.render("Wave: " + str(wave), 1, BLUE)
+        leftText = font.render("Aliens Left: " + str(aliensLeftThisWave),
+                               1, BLUE)
+        scoreText = font.render("Score: " + str(score), 1, BLUE)
+        bombText = font.render("Bombs: " + str(bombsHeld), 1, BLUE)
+
+        wavePos = waveText.get_rect(topleft=screen.get_rect().topleft)
+        leftPos = leftText.get_rect(midtop=screen.get_rect().midtop)
+        scorePos = scoreText.get_rect(topright=screen.get_rect().topright)
+        bombPos = bombText.get_rect(bottomleft=screen.get_rect().bottomleft)
+
+        text = [waveText, leftText, scoreText, bombText]
+        textposition = [wavePos, leftPos, scorePos, bombPos]
+
+    # Detertmine when to move to next wave
+        if aliensLeftThisWave <= 0:
+            if betweenWaveCount > 0:
+                betweenWaveCount -= 1
+                nextWaveText = font.render(
+                    'Wave ' + str(wave + 1) + ' in', 1, BLUE)
+                nextWaveNum = font.render(
+                    str((betweenWaveCount // clockTime) + 1), 1, BLUE)
+                text.extend([nextWaveText, nextWaveNum])
+                nextWavePos = nextWaveText.get_rect(
+                    center=screen.get_rect().center)
+                nextWaveNumPos = nextWaveNum.get_rect(
+                    midtop=nextWavePos.midbottom)
+                textposition.extend([nextWavePos, nextWaveNumPos])
+                if wave % 4 == 0:       # 4번째 wave마다 speed up
+                    speedUpText = font.render('SPEED UP!', 1, RED)
+                    speedUpPos = speedUpText.get_rect(
+                        midtop=nextWaveNumPos.midbottom)
+                    text.append(speedUpText)
+                    textposition.append(speedUpPos)
+            elif betweenWaveCount == 0: # 4번째 wave마다 speed up
+                if wave % 4 == 0:
+                    speed += 0.5
+                    MasterSprite.speed = speed
+                    ship.initializeKeys()
+                    aliensThisWave = 10
+                    aliensLeftThisWave = Alien.numOffScreen = aliensThisWave
+                else:
+                    aliensThisWave *= 2
+                    aliensLeftThisWave = Alien.numOffScreen = aliensThisWave
+                if wave == 1:
+                    Alien.pool.add([Fasty() for _ in range(5)])
+                if wave == 2:
+                    Alien.pool.add([Roundy() for _ in range(5)])
+                if wave == 3:
+                    Alien.pool.add([Crawly() for _ in range(5)])    # 새로운 적 종류 추가
+                wave += 1
+                betweenWaveCount = betweenWaveTime
+
+        textOverlays = zip(text, textposition)
+
+    # Update and draw all sprites and text
+        screen.blit(
+            background, (0, 0), area=pygame.Rect(
+                0, backgroundLoc, 500, 500))
+        backgroundLoc -= speed
+        if backgroundLoc - speed <= speed:
+            backgroundLoc = 1500
+        allsprites.update()
+        allsprites.draw(screen)
+        alldrawings.update()
+        for txt, pos in textOverlays:
+            screen.blit(txt, pos)
+        pygame.display.flip()
+
+    accuracy = round(score / missilesFired, 4) if missilesFired > 0 else 0.0
+    isHiScore = len(hiScores) < Database.numScores or score > hiScores[-1][1]
+    name = ''
+    nameBuffer = []
+
+    while True:
+        clock.tick(clockTime)
+
+    # Event Handling
+        for event in pygame.event.get():
+            if (event.type == pygame.QUIT
+                or not isHiScore
+                and event.type == pygame.KEYDOWN
+                    and event.key == pygame.K_ESCAPE):
+                return False
+            elif (event.type == pygame.KEYDOWN
+                  and event.key == pygame.K_RETURN
+                  and not isHiScore):
+                return True
+            elif (event.type == pygame.KEYDOWN
+                  and event.key in Keyboard.keys.keys()
+                  and len(nameBuffer) < 8):
+                nameBuffer.append(Keyboard.keys[event.key])
+                name = ''.join(nameBuffer)
+            elif (event.type == pygame.KEYDOWN
+                  and event.key == pygame.K_BACKSPACE
+                  and len(nameBuffer) > 0):
+                nameBuffer.pop()
+                name = ''.join(nameBuffer)
+            elif (event.type == pygame.KEYDOWN
+                  and event.key == pygame.K_RETURN
+                  and len(name) > 0):
+                Database.setScore(hiScores, (name, score, accuracy))
+                return True
+
+        if isHiScore:
+            hiScoreText = font.render('HIGH SCORE!', 1, RED)
+            hiScorePos = hiScoreText.get_rect(
+                midbottom=screen.get_rect().center)
+            scoreText = font.render(str(score), 1, BLUE)
+            scorePos = scoreText.get_rect(midtop=hiScorePos.midbottom)
+            enterNameText = font.render('ENTER YOUR NAME:', 1, RED)
+            enterNamePos = enterNameText.get_rect(midtop=scorePos.midbottom)
+            nameText = font.render(name, 1, BLUE)
+            namePos = nameText.get_rect(midtop=enterNamePos.midbottom)
+            textOverlay = zip([hiScoreText, scoreText,
+                               enterNameText, nameText],
+                              [hiScorePos, scorePos,
+                               enterNamePos, namePos])
+        else:
+            gameOverText = font.render('GAME OVER', 1, BLUE)
+            gameOverPos = gameOverText.get_rect(
+                center=screen.get_rect().center)
+            scoreText = font.render('SCORE: {}'.format(score), 1, BLUE)
+            scorePos = scoreText.get_rect(midtop=gameOverPos.midbottom)
+            textOverlay = zip([gameOverText, scoreText],
+                              [gameOverPos, scorePos])
+
+    # Update and draw all sprites
+        screen.blit(
+            background, (0, 0), area=pygame.Rect(
+                0, backgroundLoc, 500, 500))
+        backgroundLoc -= speed
+        if backgroundLoc - speed <= 0:
+            backgroundLoc = 1500
+        allsprites.update()
+        allsprites.draw(screen)
+        alldrawings.update()
+        for txt, pos in textOverlay:
+            screen.blit(txt, pos)
+        pygame.display.flip()
+
+
+if __name__ == '__main__':
+    while(main()):
+        pass
