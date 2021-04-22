@@ -1,0 +1,143 @@
+----------files---------                      
+shooting_game.py  
+database.py        
+load.py                   
+sprites.py                 
+data/
+------------------------
+
++---------------------+
++ shooting_game.py +
++---------------------+
+import pygame
+import random
+from collections import deque
+from sprites import ~
+from database import Database
+from load import load_image, ~
+
+(line 16)
+컬러맵 지정: BLUE(0,0,255) RED(255,0,0)
+
+kebord (line 23)
+키 지정: direction = {pygame.K_w(0,-2), pygame.K_s: (0,2), pygame.K_a:(-2, 0), pygame.K_d: (2, 0)}
+
+main method (line 33)
+initialize, background(star pattern)
+sprite groups(alien.pool, alien.active, missile.pool, missile.active, explosion ~, powerups, bombs)
+sound: missile_sound #ogg files
+aliensThiswave, aliensleftThisWave, Alien.numOffScreen = 10, 10, 10
+wave=1, score=0, bombssHeld=3 # 기본 설정
+
+# in menu(line 156~)
+for event in pygame.event.get():
+	quit
+	keydown&key return(enter키인듯): 
+		showHiScores = false(기본값)
+		quit = return 
+		game start(1, inMenu=false)
+		showHiScores(2, showHiScores = true)
+		sound(3)
+		music(4)
+		return(5)
+	
+	keydown&key == K_w 위로가기
+	keydown&key == K_s 아래로가기
+
+# while ship alive (line 221~)
+leftthiswave >=20 : poweruptimeleft -=1
+poweruptimeleft <= 0 : poweruptimeleft=poweruptime #poweruptime은 기본적으로 10*clockTime으로 지정되어있음
+#clock time = 60 (maximum fps)
+
+#충돌 감지 (line263~)
+for alien in Alien.active:
+	if pygame.spirte.collide_circle(bomb, alien) explosion.position(alien.rect.center) #bomb을 작동하면 alien이 터짐,
+	if pygame.sprite.collide_rect(missile, alien) explosion.position(alien.rect.center)#missile이 작동하면 alien이 터짐 
+ 	aliensLeftThisWave -= 1; score += 1 #다음 wave까지 남은 alien수 -1, 점수 +1
+	if pygame.sprite.collide_rect(alien, ship): ship.shiledUp에 따라 alien이 터지거나 ship.alive = Flase
+
+#파워업 (line297)
+for powerup in powerups:
+	if pygame.spirte.collide_circle(powerup, ship): bomb/shild에 따라 bombsHeld +=1  혹은 ship.shieldUp = True
+	powerup.kill()
+
+# wave시스템(line 330~)
+wave%4==0: speed up +0.5
+else: aliensThisWave *=2 #alien 2배로 
+
+wave1에서는 siney(green), spikey(blue)만 등장
+wave2에 fasty(white) 추가
+wave3에 roundy(red) 추가
+wave4에 crawly(yellow)추가
+
+??: betweenWaveCount
+
+#이벤트 (line 393)
+quit&keydown&key==K_ESCAPE : return false
+keydown&key==K_return : return true
+keydown&key in kebord&len(namebuffer<8) : namebuffer.append(keybord) #이름 적을때
+keydown&K_backspace&namebuffer>0: namebuffer.pop() #이름 지우기
+keydown&key==K_RETURN&len(name)>0 : Database.setScore #return key를 누르면 데이터베이스에 작성
+
++---------------------+
++       load.py          +
++---------------------+
+import os 
+import pygame
+
+main_dir = os.path.split(os.path.abspath(__file__))[0]
+data_dir = os.path.join(main_dir, 'data')
+
+메소드
+load_music
+load_sound
+load_image(name, colorkey=None): 
+	fullname = os.path.join(data_dir, name)
+	try: image = pygame.image.load(fullname)
+	if colorkey is not None: colorkey = image.get_at((0,0))
+
++---------------------+
++      sprites.py        +
++---------------------+
+
+import pygame
+import randome
+import math
+from load import load_image
+
+class MasterSpirte(pygame.sprite.Sprite)
+|__ explostion
+|__ missile
+	@classmethod
+	def position(cls, loc): if len(cls.pool) > 0: missile = cls.pool.sprits()[0]
+|__ powerup : kindof+'_powerup.png'
+	|__ BombPowerup : super().__init__('bomb') self.pType = 'bomb'
+	|__ ShieldPowerup : super().__init__('shield') self.pType = 'shield'
+|__ ship
+|__ Alien : 'space_invader_' + color + '.png'
+	@classmethod
+	def position(cls): alien = random.choice(cls.pool.sprites())	
+	|__Siney: green alien
+	|__ Roundy: red alien
+	|__Spikey: blue alien
+	|__Fasty: white alien
+	|__ Crawly: yellow alien
+
+class bomb(pygame.sprite.Sprite): ship을 기준으로 반원을 그리고 ailen을 kill() 하는 메소드
+#shiled는 따로 클래스가 없고 ship의 shiledUp 속성의 true false 상태만 존재 
+
++---------------------+
++      database.py     +
++---------------------+
+import os
+import sqlite3
+
+main_dir = os.path.split(os.path.abspath(__file__))[0]
+data_dir = os.path.join(main_dir, 'data')
+
+class Database: path = os.path.join(data_dir, 'hiScores.db') #hiScores.db파일에 랭킹 저장
+	@staticmethod
+	getSound
+	setSound
+	getScores
+	setScore(hiScores, entry)
