@@ -36,7 +36,7 @@ def main():
     pygame.init()   # pygame을 사용하기 위한 초기화
     screen = pygame.display.set_mode((500, 500))    # 500x500 화면 set
     pygame.display.set_caption('Shooting Game')     # 화면 제목
-    pygame.mouse.set_visible(1)     # 0/1 : 마우스 안보임/보임
+    pygame.mouse.set_visible(0)     # 0/1 : 마우스 안보임/보임
 
 # Create the background which will scroll and loop over a set of different
 # size stars
@@ -69,7 +69,7 @@ def main():
     clock = pygame.time.Clock()     # fps에 따르는 시간(fps를 빠르게 하면 speed가 빨라지는 것과 비슷한 효과를 냄)
     ship = Ship()      # ship 클래스 인스턴스 생성
     initialAlienTypes = (Siney, Spikey)     # 첫 스테이지에 나오는 적 종류
-    powerupTypes = (BombPowerup, ShieldPowerup)     # 파워업 종류
+    powerupTypes = (BombPowerup, ShieldPowerup)     # 아이템 종류(폭탄 +1, 쉴드)
 
     # Sprite groups
     alldrawings = pygame.sprite.Group()     # group : sprite 관리를 위한 container, 화면에 여러 객체가 등장하는 경우 주로 사용
@@ -92,17 +92,17 @@ def main():
     ship_explode_sound = load_sound('ship_explode.ogg')
     load_music('music_loop.ogg')
 
-    #alienPeriod = clockTime // 2    # fps에 따른 외계인(적)이 나오는 주기
+    alienPeriod = clockTime // 2    # fps에 따른 외계인(적)이 나오는 주기
     curTime = 0
     aliensThisWave, aliensLeftThisWave, Alien.numOffScreen = 10, 10, 10     # 웨이브 나올 외계인 수, 웨이브 남은 외계인 수, 화면에 보이는 외계인 수(?)
     wave = 1    # 웨이브, 폭탄 갯수 등 초기값
     bombsHeld = 3
     score = 0
     missilesFired = 0   # 총 미사일 발사 갯수
-    powerupTime = 10 * clockTime    # 
+    powerupTime = 10 * clockTime    # 아이템 생성할 시간 간격 설정
     powerupTimeLeft = powerupTime
-    betweenWaveTime = 3 * clockTime     # 
-    betweenWaveCount = betweenWaveTime
+    betweenWaveTime = 3 * clockTime     # 60fps에서 60*3 => 3초, 321 카운트 숫자
+    betweenWaveCount = betweenWaveTime  # 값을 변경할 betweenWaveCount를 따로 지정
     font = pygame.font.Font(None, 36)
 
     inMenu = True   # 메뉴 화면인지를 나타낼 변수
@@ -126,7 +126,7 @@ def main():
     titleRect.midtop = screen.get_rect().inflate(0, -200).midtop
 
     startText = font.render('START GAME', 1, BLUE)
-    startPos = startText.get_rect(midtop=titleRect.inflate(0, 100).midbottom)   # midbottom 등등 : 상대적인 위치
+    startPos = startText.get_rect(midtop=titleRect.inflate(0, 100).midbottom)   # get_rect : rect가 아닌 곳에서 사각형을 만들기 위해 사용 / title이 있는 inflate의 하중앙 위치를 가져와서 상중앙으로 위치 설정
     hiScoreText = font.render('HIGH SCORES', 1, BLUE)
     hiScorePos = hiScoreText.get_rect(topleft=startPos.bottomleft)
     fxText = font.render('SOUND FX ', 1, BLUE)
@@ -160,7 +160,7 @@ def main():
             background, (0, 0), area=pygame.Rect(
                 0, backgroundLoc, 500, 500))    # rect(x축, y축, 가로, 세로)
         backgroundLoc -= speed  # 배경 이동
-        if backgroundLoc - speed <= speed:      # 배경이 계속 보이도록 하는 구문
+        if backgroundLoc - speed <= speed:      # 배경이 계속 보이도록 함
             backgroundLoc = 1500
 
         for event in pygame.event.get():
@@ -221,7 +221,7 @@ def main():
     while ship.alive:
         clock.tick(clockTime)
 
-        if aliensLeftThisWave >= 20:    # 웨이브에 잡아야하는 적 수가 20 이상이면 powerup 남은 시간 -1, powerup 남은 시간이 다 되면 랜덤 파워업
+        if aliensLeftThisWave >= 20:    # 웨이브에 잡아야하는 적 수가 20 이상이면 powerup 남은 시간 -1, powerup 남은 시간이 다 되면 아이템 생성
             powerupTimeLeft -= 1
         if powerupTimeLeft <= 0:
             powerupTimeLeft = powerupTime
@@ -243,7 +243,7 @@ def main():
                 ship.vert -= direction[event.key][1] * speed
             elif (event.type == pygame.KEYDOWN
                   and event.key == pygame.K_SPACE):
-                Missile.position(ship.rect.midtop)  # 비행기 위치에 미사일 위치시킴(생성)
+                Missile.position(ship.rect.midtop)  # 비행기 사각형의 상중앙에 미사일 위치시킴(생성)
                 missilesFired += 1
                 if soundFX:
                     missile_sound.play()
@@ -306,10 +306,10 @@ def main():
                 powerup.kill()
 
     # Update Aliens
-        if curTime <= 0 and aliensLeftThisWave > 0:
-            Alien.position()
-            curTime = alienPeriod
-        elif curTime > 0:
+        if curTime <= 0 and aliensLeftThisWave > 0:     # curTime : 외계인이 나오는 주기인 alienPeriod가 얼마나 지났는지 알기위해 샤용
+            Alien.position()        # 시간이 지났으면 외계인 생성 후 시간 초기화
+            curTime = alienPeriod   
+        elif curTime > 0:       # 시간이 남았으면 시간이 지나게 함
             curTime -= 1
 
     # Update text overlays
@@ -328,9 +328,9 @@ def main():
         textposition = [wavePos, leftPos, scorePos, bombPos]
 
     # Detertmine when to move to next wave
-        if aliensLeftThisWave <= 0:
-            if betweenWaveCount > 0:
-                betweenWaveCount -= 1
+        if aliensLeftThisWave <= 0:     # 남은 외계인이 없음 -> 다음 스테이지
+            if betweenWaveCount > 0:    # Wave 시작 전 카운트 숫자
+                betweenWaveCount -= 1   # 1초마다 fps 설정한 값(60)만큼 줄어듬
                 nextWaveText = font.render(
                     'Wave ' + str(wave + 1) + ' in', 1, BLUE)
                 nextWaveNum = font.render(
@@ -341,7 +341,7 @@ def main():
                 nextWaveNumPos = nextWaveNum.get_rect(
                     midtop=nextWavePos.midbottom)
                 textposition.extend([nextWavePos, nextWaveNumPos])
-                if wave % 4 == 0:       # 4번째 wave마다 speed up
+                if wave % 4 == 0:       # 4번째 wave마다 speed up text
                     speedUpText = font.render('SPEED UP!', 1, RED)
                     speedUpPos = speedUpText.get_rect(
                         midtop=nextWaveNumPos.midbottom)
@@ -352,19 +352,19 @@ def main():
                     speed += 0.5
                     MasterSprite.speed = speed
                     ship.initializeKeys()
-                    aliensThisWave = 10
+                    aliensThisWave = 10                                         # 4를 주기로 wave 몬스터 수 10, 20, 40, 80 반복,
                     aliensLeftThisWave = Alien.numOffScreen = aliensThisWave
                 else:
                     aliensThisWave *= 2
-                    aliensLeftThisWave = Alien.numOffScreen = aliensThisWave
+                    aliensLeftThisWave = Alien.numOffScreen = aliensThisWave    
                 if wave == 1:
                     Alien.pool.add([Fasty() for _ in range(5)])
                 if wave == 2:
                     Alien.pool.add([Roundy() for _ in range(5)])
                 if wave == 3:
-                    Alien.pool.add([Crawly() for _ in range(5)])    # 새로운 적 종류 추가
+                    Alien.pool.add([Crawly() for _ in range(5)])    # 새로운 적 종류 추가, 3번째 wave까지 지나면 외계인 종류는 계속 5개가 됨
                 wave += 1
-                betweenWaveCount = betweenWaveTime
+                betweenWaveCount = betweenWaveTime  # 카운트 한 후 값 초기화
 
         textOverlays = zip(text, textposition)
 
@@ -383,7 +383,7 @@ def main():
         pygame.display.flip()
 
     accuracy = round(score / missilesFired, 4) if missilesFired > 0 else 0.0
-    isHiScore = len(hiScores) < Database.numScores or score > hiScores[-1][1]
+    isHiScore = len(hiScores) < Database.numScores or score > hiScores[-1][1]   # db가 꽉 차있지 않거나 db 맨 아래 점수보다 높으면 True
     name = ''
     nameBuffer = []
 
