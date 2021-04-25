@@ -141,3 +141,4 @@ class Database: path = os.path.join(data_dir, 'hiScores.db') #hiScores.db파일�
 	setSound
 	getScores
 	setScore(hiScores, entry)
+
