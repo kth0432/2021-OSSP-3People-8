@@ -13,11 +13,14 @@ if not pygame.mixer:
 if not pygame.font:
     print('Warning, fonts disabled')
 
-BLUE = (0, 0, 255)
+# BLUE = (0, 0, 255)
 RED = (255, 0, 0)
+BLACK= ( 0,  0,  0)
+WHITE= (255,255,255)
+GREEN= ( 0,255,  0)
 
-direction = {None: (0, 0), pygame.K_w: (0, -2), pygame.K_s: (0, 2),
-             pygame.K_a: (-2, 0), pygame.K_d: (2, 0)}
+direction = {None: (0, 0), pygame.K_UP: (0, -2), pygame.K_DOWN: (0, 2),
+             pygame.K_LEFT: (-2, 0), pygame.K_RIGHT: (2, 0)}
 
 
 class Keyboard(object):
@@ -36,26 +39,33 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((500, 500))
     pygame.display.set_caption('Shooting Game')
-    pygame.mouse.set_visible(0)
+    pygame.mouse.set_visible(1)
 
 # Create the background which will scroll and loop over a set of different
 # size stars
     background = pygame.Surface((500, 2000))
     background = background.convert()
+    # 수정 : 배경 색깔 고르기 white or red
     background.fill((0, 0, 0))
+    # red = [255,0,0]
+    # abc = input("what color??")
+    # if abc =='red':
+    #     background.fill(red)
+    #     pygame.display.update()
+    
     backgroundLoc = 1500
-    finalStars = deque()
+    finalStars = deque() 
     for y in range(0, 1500, 30):
         size = random.randint(2, 5)
         x = random.randint(0, 500 - size)
         if y <= 500:
             finalStars.appendleft((x, y + 1500, size))
         pygame.draw.rect(
-            background, (255, 255, 0), pygame.Rect(x, y, size, size))
+            background, (255, 0, 0), pygame.Rect(x, y, size, size))
     while finalStars:
         x, y, size = finalStars.pop()
         pygame.draw.rect(
-            background, (255, 255, 0), pygame.Rect(x, y, size, size))
+            background, (255, 0, 0), pygame.Rect(x, y, size, size))
 
 # Display the background
     screen.blit(background, (0, 0))
@@ -106,6 +116,7 @@ def main():
     font = pygame.font.Font(None, 36)
 
     inMenu = True
+
     hiScores = Database.getScores()
     highScoreTexts = [font.render("NAME", 1, RED),
                       font.render("SCORE", 1, RED),
@@ -117,39 +128,46 @@ def main():
                     highScoreTexts[2].get_rect(
                       topright=screen.get_rect().inflate(-100, -100).topright)]
     for hs in hiScores:
-        highScoreTexts.extend([font.render(str(hs[x]), 1, BLUE)
+        highScoreTexts.extend([font.render(str(hs[x]), 1, WHITE)
                                for x in range(3)])
         highScorePos.extend([highScoreTexts[x].get_rect(
             topleft=highScorePos[x].bottomleft) for x in range(-3, 0)])
 
     title, titleRect = load_image('title.png')
+    pause,pauseRect = load_image('pause.png',WHITE)
     titleRect.midtop = screen.get_rect().inflate(0, -200).midtop
+    pauseRect.midtop = screen.get_rect().inflate(0, -200).midtop
 
-    startText = font.render('START GAME', 1, BLUE)
+    startText = font.render('START GAME', 1, WHITE)
     startPos = startText.get_rect(midtop=titleRect.inflate(0, 100).midbottom)
-    hiScoreText = font.render('HIGH SCORES', 1, BLUE)
+    hiScoreText = font.render('HIGH SCORES', 1, WHITE)
     hiScorePos = hiScoreText.get_rect(topleft=startPos.bottomleft)
-    fxText = font.render('SOUND FX ', 1, BLUE)
+    fxText = font.render('SOUND FX ', 1, WHITE)
     fxPos = fxText.get_rect(topleft=hiScorePos.bottomleft)
     fxOnText = font.render('ON', 1, RED)
     fxOffText = font.render('OFF', 1, RED)
     fxOnPos = fxOnText.get_rect(topleft=fxPos.topright)
     fxOffPos = fxOffText.get_rect(topleft=fxPos.topright)
-    musicText = font.render('MUSIC', 1, BLUE)
+    musicText = font.render('MUSIC', 1, WHITE)
     musicPos = fxText.get_rect(topleft=fxPos.bottomleft)
     musicOnText = font.render('ON', 1, RED)
     musicOffText = font.render('OFF', 1, RED)
     musicOnPos = musicOnText.get_rect(topleft=musicPos.topright)
     musicOffPos = musicOffText.get_rect(topleft=musicPos.topright)
-    quitText = font.render('QUIT', 1, BLUE)
+    quitText = font.render('QUIT', 1, WHITE)
     quitPos = quitText.get_rect(topleft=musicPos.bottomleft)
-    selectText = font.render('*', 1, BLUE)
+    selectText = font.render('> ', 1, WHITE)
     selectPos = selectText.get_rect(topright=startPos.topleft)
     menuDict = {1: startPos, 2: hiScorePos, 3: fxPos, 4: musicPos, 5: quitPos}
     selection = 1
     showHiScores = False
     soundFX = Database.getSound()
     music = Database.getSound(music=True)
+
+    # pause 구현
+    restartText = font.render('RESTART    ', 1,WHITE)
+    restartPos = restartText.get_rect(midtop=titleRect.inflate(0, 100).midbottom)
+
     if music and pygame.mixer:
         pygame.mixer.music.play(loops=-1)
 
@@ -167,7 +185,7 @@ def main():
             if (event.type == pygame.QUIT):
                 return
             elif (event.type == pygame.KEYDOWN
-                  and event.key == pygame.K_RETURN):
+                  and event.key == pygame.K_RETURN): # K_RETURN은 enter누르면
                 if showHiScores:
                     showHiScores = False
                 elif selection == 1:
@@ -190,12 +208,12 @@ def main():
                 elif selection == 5:
                     return
             elif (event.type == pygame.KEYDOWN
-                  and event.key == pygame.K_w
+                  and event.key == pygame.K_UP
                   and selection > 1
                   and not showHiScores):
                 selection -= 1
             elif (event.type == pygame.KEYDOWN
-                  and event.key == pygame.K_s
+                  and event.key == pygame.K_DOWN
                   and selection < len(menuDict)
                   and not showHiScores):
                 selection += 1
@@ -226,8 +244,8 @@ def main():
         if powerupTimeLeft <= 0:
             powerupTimeLeft = powerupTime
             random.choice(powerupTypes)().add(powerups, allsprites)
-
-    # Event Handling
+  
+        # Event Handling
         for event in pygame.event.get():
             if (event.type == pygame.QUIT
                 or event.type == pygame.KEYDOWN
@@ -255,8 +273,77 @@ def main():
                     newBomb.add(bombs, alldrawings)
                     if soundFX:
                         bomb_sound.play()
+            # pause 구현부분
+            elif (event.type == pygame.KEYDOWN and event.key == pygame.K_p):   
+                inPmenu = True
+                while inPmenu:
+                    clock.tick(clockTime)
 
-    # Collision Detection
+                    screen.blit(
+                        background, (0, 0), area=pygame.Rect(
+                            0, backgroundLoc, 500, 500))
+                    backgroundLoc -= speed
+                    if backgroundLoc - speed <= speed:
+                        backgroundLoc = 1500
+
+                    for event in pygame.event.get():
+                        if (event.type == pygame.QUIT):
+                            return
+                        elif (event.type == pygame.KEYDOWN
+                            and event.key == pygame.K_RETURN): # K_RETURN은 enter누르면
+                            if showHiScores:
+                                showHiScores = False
+                            elif selection == 1:
+                                inPmenu = False
+                                break
+                                # ship.initializeKeys()
+                            elif selection == 2:
+                                showHiScores = True
+                            elif selection == 3:
+                                soundFX = not soundFX
+                                if soundFX:
+                                    missile_sound.play()
+                                Database.setSound(int(soundFX))
+                            elif selection == 4 and pygame.mixer:
+                                music = not music
+                                if music:
+                                    pygame.mixer.music.play(loops=-1)
+                                else:
+                                    pygame.mixer.music.stop()
+                                Database.setSound(int(music), music=True)
+                            elif selection == 5:
+                                return
+                        elif (event.type == pygame.KEYDOWN
+                            and event.key == pygame.K_UP
+                            and selection > 1
+                            and not showHiScores):
+                            selection -= 1
+                        elif (event.type == pygame.KEYDOWN
+                            and event.key == pygame.K_DOWN
+                            and selection < len(menuDict)
+                            and not showHiScores):
+                            selection += 1
+
+                    selectPos = selectText.get_rect(topright=menuDict[selection].topleft)
+
+                    if showHiScores:
+                        textOverlays = zip(highScoreTexts, highScorePos)
+                    else:
+                        textOverlays = zip([restartText, hiScoreText, fxText,
+                                            musicText, quitText, selectText,
+                                            fxOnText if soundFX else fxOffText,
+                                            musicOnText if music else musicOffText],
+                                        [restartPos, hiScorePos, fxPos,
+                                            musicPos, quitPos, selectPos,
+                                            fxOnPos if soundFX else fxOffPos,
+                                            musicOnPos if music else musicOffPos])
+                        screen.blit(pause, pauseRect)
+                    for txt, pos in textOverlays:
+                        screen.blit(txt, pos)
+                    pygame.display.flip()
+                    
+
+     # Collision Detection
         # Aliens
         for alien in Alien.active:
             for bomb in bombs:
@@ -305,19 +392,19 @@ def main():
             elif powerup.rect.top > powerup.area.bottom:
                 powerup.kill()
 
-    # Update Aliens
+     # Update Aliens
         if curTime <= 0 and aliensLeftThisWave > 0:
             Alien.position()
             curTime = alienPeriod
         elif curTime > 0:
             curTime -= 1
 
-    # Update text overlays
-        waveText = font.render("Wave: " + str(wave), 1, BLUE)
+     # Update text overlays
+        waveText = font.render("Wave: " + str(wave), 1, WHITE)
         leftText = font.render("Aliens Left: " + str(aliensLeftThisWave),
-                               1, BLUE)
-        scoreText = font.render("Score: " + str(score), 1, BLUE)
-        bombText = font.render("Bombs: " + str(bombsHeld), 1, BLUE)
+                               1, WHITE)
+        scoreText = font.render("Score: " + str(score), 1, WHITE)
+        bombText = font.render("Bombs: " + str(bombsHeld), 1, WHITE)
 
         wavePos = waveText.get_rect(topleft=screen.get_rect().topleft)
         leftPos = leftText.get_rect(midtop=screen.get_rect().midtop)
@@ -327,14 +414,14 @@ def main():
         text = [waveText, leftText, scoreText, bombText]
         textposition = [wavePos, leftPos, scorePos, bombPos]
 
-    # Detertmine when to move to next wave
+     # Detertmine when to move to next wave
         if aliensLeftThisWave <= 0:
             if betweenWaveCount > 0:
                 betweenWaveCount -= 1
                 nextWaveText = font.render(
-                    'Wave ' + str(wave + 1) + ' in', 1, BLUE)
+                    'Wave ' + str(wave + 1) + ' in', 1, WHITE)
                 nextWaveNum = font.render(
-                    str((betweenWaveCount // clockTime) + 1), 1, BLUE)
+                    str((betweenWaveCount // clockTime) + 1), 1, WHITE)
                 text.extend([nextWaveText, nextWaveNum])
                 nextWavePos = nextWaveText.get_rect(
                     center=screen.get_rect().center)
@@ -368,7 +455,7 @@ def main():
 
         textOverlays = zip(text, textposition)
 
-    # Update and draw all sprites and text
+     # Update and draw all sprites and text
         screen.blit(
             background, (0, 0), area=pygame.Rect(
                 0, backgroundLoc, 500, 500))
@@ -421,21 +508,21 @@ def main():
             hiScoreText = font.render('HIGH SCORE!', 1, RED)
             hiScorePos = hiScoreText.get_rect(
                 midbottom=screen.get_rect().center)
-            scoreText = font.render(str(score), 1, BLUE)
+            scoreText = font.render(str(score), 1, WHITE)
             scorePos = scoreText.get_rect(midtop=hiScorePos.midbottom)
             enterNameText = font.render('ENTER YOUR NAME:', 1, RED)
             enterNamePos = enterNameText.get_rect(midtop=scorePos.midbottom)
-            nameText = font.render(name, 1, BLUE)
+            nameText = font.render(name, 1, WHITE)
             namePos = nameText.get_rect(midtop=enterNamePos.midbottom)
             textOverlay = zip([hiScoreText, scoreText,
                                enterNameText, nameText],
                               [hiScorePos, scorePos,
                                enterNamePos, namePos])
         else:
-            gameOverText = font.render('GAME OVER', 1, BLUE)
+            gameOverText = font.render('GAME OVER', 1, WHITE)
             gameOverPos = gameOverText.get_rect(
                 center=screen.get_rect().center)
-            scoreText = font.render('SCORE: {}'.format(score), 1, BLUE)
+            scoreText = font.render('SCORE: {}'.format(score), 1, WHITE)
             scorePos = scoreText.get_rect(midtop=gameOverPos.midbottom)
             textOverlay = zip([gameOverText, scoreText],
                               [gameOverPos, scorePos])
