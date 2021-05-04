@@ -3,7 +3,7 @@ import random
 from collections import deque
 
 from sprites import (MasterSprite, Ship, Alien, Missile, BombPowerup,
-                     ShieldPowerup, Explosion, Siney, Spikey, Fasty,
+                     ShieldPowerup, DoublemissilePowerup, Explosion, Siney, Spikey, Fasty,
                      Roundy, Crawly)
 from database import Database
 from load import load_image, load_sound, load_music
@@ -52,9 +52,9 @@ def main():
     # if abc =='red':
     #     background.fill(red)
     #     pygame.display.update()
-    
+
     backgroundLoc = 1500
-    finalStars = deque() 
+    finalStars = deque()
     for y in range(0, 1500, 30):
         size = random.randint(2, 5)
         x = random.randint(0, 500 - size)
@@ -79,7 +79,7 @@ def main():
     clock = pygame.time.Clock()
     ship = Ship()
     initialAlienTypes = (Siney, Spikey)
-    powerupTypes = (BombPowerup, ShieldPowerup)
+    powerupTypes = (BombPowerup, ShieldPowerup, DoublemissilePowerup)
 
     # Sprite groups
     alldrawings = pygame.sprite.Group()
@@ -107,12 +107,15 @@ def main():
     aliensThisWave, aliensLeftThisWave, Alien.numOffScreen = 10, 10, 10
     wave = 1
     bombsHeld = 3
+    doublemissile = False #doublemissile아이템이 지속되는 동안(5초) 미사일이 두배로 발사됨
     score = 0
     missilesFired = 0
     powerupTime = 10 * clockTime
     powerupTimeLeft = powerupTime
     betweenWaveTime = 3 * clockTime
     betweenWaveCount = betweenWaveTime
+    betweenDoubleTime = 5 * clockTime
+    betweenDoubleCount = betweenDoubleTime
     font = pygame.font.Font(None, 36)
 
     inMenu = True
@@ -244,7 +247,7 @@ def main():
         if powerupTimeLeft <= 0:
             powerupTimeLeft = powerupTime
             random.choice(powerupTypes)().add(powerups, allsprites)
-  
+
         # Event Handling
         for event in pygame.event.get():
             if (event.type == pygame.QUIT
@@ -261,8 +264,14 @@ def main():
                 ship.vert -= direction[event.key][1] * speed
             elif (event.type == pygame.KEYDOWN
                   and event.key == pygame.K_SPACE):
-                Missile.position(ship.rect.midtop)
-                missilesFired += 1
+                  #doublemissile 구현
+                if doublemissile:
+                    Missile.position(ship.rect.topleft)
+                    Missile.position(ship.rect.topright)
+                    missilesFired += 2
+                else:
+                    Missile.position(ship.rect.midtop)
+                    missilesFired += 1
                 if soundFX:
                     missile_sound.play()
             elif (event.type == pygame.KEYDOWN
@@ -274,7 +283,7 @@ def main():
                     if soundFX:
                         bomb_sound.play()
             # pause 구현부분
-            elif (event.type == pygame.KEYDOWN and event.key == pygame.K_p):   
+            elif (event.type == pygame.KEYDOWN and event.key == pygame.K_p):
                 inPmenu = True
                 while inPmenu:
                     clock.tick(clockTime)
@@ -341,7 +350,7 @@ def main():
                     for txt, pos in textOverlays:
                         screen.blit(txt, pos)
                     pygame.display.flip()
-                    
+
 
      # Collision Detection
         # Aliens
@@ -388,6 +397,8 @@ def main():
                     bombsHeld += 1
                 elif powerup.pType == 'shield':
                     ship.shieldUp = True
+                elif powerup.pType == 'doublemissile':
+                    doublemissile = True
                 powerup.kill()
             elif powerup.rect.top > powerup.area.bottom:
                 powerup.kill()
@@ -413,6 +424,14 @@ def main():
 
         text = [waveText, leftText, scoreText, bombText]
         textposition = [wavePos, leftPos, scorePos, bombPos]
+
+        #5초동안 doublemissile상태를 유지
+        if doublemissile:
+            if betweenDoubleCount > 0:
+                betweenDoubleCount -= 1
+            elif betweenDoubleCount == 0:
+                doublemissile = False
+                betweenDoubleCount = betweenDoubleTime
 
      # Detertmine when to move to next wave
         if aliensLeftThisWave <= 0:

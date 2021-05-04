@@ -122,6 +122,10 @@ class ShieldPowerup(Powerup):
         super().__init__('shield')
         self.pType = 'shield'
 
+class DoublemissilePowerup(Powerup):
+        def __init__(self):
+            super().__init__('doublemissile')
+            self.pType = 'doublemissile'
 
 class Ship(MasterSprite):
     def __init__(self):
