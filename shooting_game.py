@@ -7,13 +7,14 @@ from sprites import (MasterSprite, Ship, Alien, Missile, BombPowerup,
                      Roundy, Crawly)
 from database import Database
 from load import load_image, load_sound, load_music
+import os
 
 if not pygame.mixer:
     print('Warning, sound disabled')
 if not pygame.font:
     print('Warning, fonts disabled')
 
-scr_x, scr_y = 500, 500
+scr_size = 500
 
 # BLUE = (0, 0, 255)
 RED = (255, 0, 0)
@@ -31,23 +32,22 @@ class Keyboard(object):
             pygame.K_u: 'U', pygame.K_v: 'V', pygame.K_w: 'W', pygame.K_x: 'X',
             pygame.K_y: 'Y', pygame.K_z: 'Z'}
 
+def main(size):
+    scr_size = size
 
-def main(xx, yy):
-    scr_x, scr_y = xx, yy
-
-    direction = {None: (0, 0), pygame.K_UP: (0, round(-scr_y*0.004)), pygame.K_DOWN: (0, round(scr_y*0.004)),
-             pygame.K_LEFT: (round(-scr_x*0.004), 0), pygame.K_RIGHT: (round(scr_x*0.004), 0)}
+    direction = {None: (0, 0), pygame.K_UP: (0, round(-scr_size*0.004)), pygame.K_DOWN: (0, round(scr_size*0.004)),
+             pygame.K_LEFT: (round(-scr_size*0.004), 0), pygame.K_RIGHT: (round(scr_size*0.004), 0)}
 
     # Initialize everything
     pygame.mixer.pre_init(11025, -16, 2, 512)
     pygame.init()
-    screen = pygame.display.set_mode((scr_x, scr_y), pygame.RESIZABLE)
+    screen = pygame.display.set_mode((scr_size, scr_size), pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.RESIZABLE)
     pygame.display.set_caption('Shooting Game')
     pygame.mouse.set_visible(1)
 
 # Create the background which will scroll and loop over a set of different
 # size stars
-    background = pygame.Surface((scr_x, scr_y*4))
+    background = pygame.Surface((scr_size, scr_size*4))
     background = background.convert()
     # 수정 : 배경 색깔 고르기 white or red
     background.fill((0, 0, 0))
@@ -57,13 +57,13 @@ def main(xx, yy):
     #     background.fill(red)
     #     pygame.display.update()
 
-    backgroundLoc = scr_y*3
+    backgroundLoc = scr_size*3
     finalStars = deque()
-    for y in range(0, scr_y*3, round(scr_y*0.06)):
-        size = random.randint(round(scr_x*0.004), round(scr_x*0.01))
-        x = random.randint(0, scr_x - size)
-        if y <= scr_y:
-            finalStars.appendleft((x, y + scr_y*3, size))
+    for y in range(0, scr_size*3, round(scr_size*0.06)):
+        size = random.randint(round(scr_size*0.004), round(scr_size*0.01))
+        x = random.randint(0, scr_size - size)
+        if y <= scr_size:
+            finalStars.appendleft((x, y + scr_size*3, size))
         pygame.draw.rect(
             background, (255, 0, 0), pygame.Rect(x, y, size, size))
     while finalStars:
@@ -120,7 +120,7 @@ def main(xx, yy):
     betweenWaveCount = betweenWaveTime
     betweenDoubleTime = 5 * clockTime
     betweenDoubleCount = betweenDoubleTime
-    font = pygame.font.Font(None, round(scr_x*0.065))
+    font = pygame.font.Font(None, round(scr_size*0.065))
 
     inMenu = True
 
@@ -129,11 +129,11 @@ def main(xx, yy):
                       font.render("SCORE", 1, RED),
                       font.render("ACCURACY", 1, RED)]
     highScorePos = [highScoreTexts[0].get_rect(
-                      topleft=screen.get_rect().inflate(-100, -100).topleft),
+                      topleft=screen.get_rect().inflate(-scr_size*0.2, -scr_size*0.2).topleft),
                     highScoreTexts[1].get_rect(
-                      midtop=screen.get_rect().inflate(-100, -100).midtop),
+                      midtop=screen.get_rect().inflate(-scr_size*0.2, -scr_size*0.2).midtop),
                     highScoreTexts[2].get_rect(
-                      topright=screen.get_rect().inflate(-100, -100).topright)]
+                      topright=screen.get_rect().inflate(-scr_size*0.2, -scr_size*0.2).topright)]
     for hs in hiScores:
         highScoreTexts.extend([font.render(str(hs[x]), 1, WHITE)
                                for x in range(3)])
@@ -141,12 +141,16 @@ def main(xx, yy):
             topleft=highScorePos[x].bottomleft) for x in range(-3, 0)])
 
     title, titleRect = load_image('title.png')
+    title = pygame.transform.scale(title, (round(title.get_width()*scr_size/500), round(title.get_height()*scr_size/500)))
+    titleRect = pygame.Rect(0, 0, title.get_width(), title.get_height())
     pause,pauseRect = load_image('pause.png',WHITE)
-    titleRect.midtop = screen.get_rect().inflate(0, -200).midtop
-    pauseRect.midtop = screen.get_rect().inflate(0, -200).midtop
+    pause = pygame.transform.scale(pause, (round(pause.get_width()*scr_size/500), round(pause.get_height()*scr_size/500)))
+    pauseRect = pygame.Rect(0, 0, pause.get_width(), pause.get_height())
+    titleRect.midtop = screen.get_rect().inflate(0, -scr_size*0.4).midtop
+    pauseRect.midtop = screen.get_rect().inflate(0, -scr_size*0.4).midtop
 
     startText = font.render('START GAME', 1, WHITE)
-    startPos = startText.get_rect(midtop=titleRect.inflate(0, 100).midbottom)
+    startPos = startText.get_rect(midtop=titleRect.inflate(0, scr_size*0.2).midbottom)
     hiScoreText = font.render('HIGH SCORES', 1, WHITE)
     hiScorePos = hiScoreText.get_rect(topleft=startPos.bottomleft)
     fxText = font.render('SOUND FX ', 1, WHITE)
@@ -173,23 +177,23 @@ def main(xx, yy):
 
     # pause 구현
     restartText = font.render('RESTART    ', 1,WHITE)
-    restartPos = restartText.get_rect(midtop=titleRect.inflate(0, 100).midbottom)
+    restartPos = restartText.get_rect(midtop=titleRect.inflate(0, scr_size*0.2).midbottom)
 
     if music and pygame.mixer:
         pygame.mixer.music.play(loops=-1)
 
     while inMenu:
         scr_x , scr_y = pygame.display.get_surface().get_size()
-        if xx != scr_x or yy != scr_y :
-            return scr_x, scr_y
+        if scr_size != scr_x or scr_size != scr_y : 
+            return min(scr_x, scr_y)    # 메뉴화면에서만 창 사이즈 크기 확인하고, 변경되면 main 재시작
         clock.tick(clockTime)
 
         screen.blit(
             background, (0, 0), area=pygame.Rect(
-                0, backgroundLoc, scr_x, scr_y))
+                0, backgroundLoc, scr_size, scr_size))
         backgroundLoc -= speed
         if backgroundLoc - speed <= speed:
-            backgroundLoc = scr_y*3
+            backgroundLoc = scr_size*3
 
         for event in pygame.event.get():
             if (event.type == pygame.QUIT):
@@ -199,7 +203,7 @@ def main(xx, yy):
                 if showHiScores:
                     showHiScores = False
                 elif selection == 1:
-                    screen = pygame.display.set_mode((scr_x, scr_y))
+                    screen = pygame.display.set_mode((scr_size, scr_size))  # 리사이즈 불가능하도록 변경
                     inMenu = False
                     ship.initializeKeys()
                 elif selection == 2:
@@ -298,10 +302,10 @@ def main(xx, yy):
 
                     screen.blit(
                         background, (0, 0), area=pygame.Rect(
-                            0, backgroundLoc, scr_x, scr_y))
+                            0, backgroundLoc, scr_size, scr_size))
                     backgroundLoc -= speed
                     if backgroundLoc - speed <= speed:
-                        backgroundLoc = scr_y*3
+                        backgroundLoc = scr_size*3
 
                     for event in pygame.event.get():
                         if (event.type == pygame.QUIT):
@@ -485,10 +489,10 @@ def main(xx, yy):
      # Update and draw all sprites and text
         screen.blit(
             background, (0, 0), area=pygame.Rect(
-                0, backgroundLoc, scr_x, scr_y))
+                0, backgroundLoc, scr_size, scr_size))
         backgroundLoc -= speed
         if backgroundLoc - speed <= speed:
-            backgroundLoc = scr_y*3
+            backgroundLoc = scr_size*3
         allsprites.update()
         allsprites.draw(screen)
         alldrawings.update()
@@ -557,10 +561,10 @@ def main(xx, yy):
     # Update and draw all sprites
         screen.blit(
             background, (0, 0), area=pygame.Rect(
-                0, backgroundLoc, scr_x, scr_y))
+                0, backgroundLoc, scr_size, scr_size))
         backgroundLoc -= speed
         if backgroundLoc - speed <= 0:
-            backgroundLoc = scr_y*3
+            backgroundLoc = scr_size*3
         allsprites.update()
         allsprites.draw(screen)
         alldrawings.update()
