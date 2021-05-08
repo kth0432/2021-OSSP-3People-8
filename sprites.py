@@ -4,6 +4,11 @@ import math
 from load import load_image
 
 
+scr_x, scr_y = 500, 500
+
+def get_size(xx, yy) :
+    scr_x, scr_y = xx, yy
+
 class MasterSprite(pygame.sprite.Sprite):
     allsprites = None
     speed = None
@@ -122,6 +127,10 @@ class ShieldPowerup(Powerup):
         super().__init__('shield')
         self.pType = 'shield'
 
+class DoublemissilePowerup(Powerup):
+        def __init__(self):
+            super().__init__('doublemissile')
+            self.pType = 'doublemissile'
 
 class Ship(MasterSprite):
     def __init__(self):
@@ -217,10 +226,10 @@ class Alien(MasterSprite):
 
     def update(self):
         horiz, vert = self.moveFunc()
-        if horiz + self.initialRect.x > 500:
-            horiz -= 500 + self.rect.width
+        if horiz + self.initialRect.x > scr_x:
+            horiz -= scr_x + self.rect.width
         elif horiz + self.initialRect.x < 0 - self.rect.width:
-            horiz += 500 + self.rect.width
+            horiz += scr_x + self.rect.width
         self.rect = self.initialRect.move((horiz, self.loc + vert))
         self.loc = self.loc + MasterSprite.speed
         if self.rect.top > self.area.bottom:
