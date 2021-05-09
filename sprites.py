@@ -144,7 +144,6 @@ class Ship(MasterSprite):
         super().__init__()
         self.image, self.rect = load_image('ship.png', -1)
         self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*scr_size/500), round(self.image.get_height()*scr_size/500)))
-        print(self.image.get_width())
         self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
         self.original = self.image
         self.shield, self.rect = load_image('ship_shield.png', -1)
