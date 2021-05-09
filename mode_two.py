@@ -1,8 +1,5 @@
 import pygame
 import random
-import time
-import sys
-import os
 from collections import deque
 
 from sprites import (MasterSprite, Ship, Alien, Missile, BombPowerup,
@@ -16,6 +13,7 @@ if not pygame.mixer:
 if not pygame.font:
     print('Warning, fonts disabled')
 
+# BLUE = (0, 0, 255)
 RED = (255, 0, 0)
 BLACK= ( 0,  0,  0)
 WHITE= (255,255,255)
@@ -34,32 +32,12 @@ class Keyboard(object):
             pygame.K_u: 'U', pygame.K_v: 'V', pygame.K_w: 'W', pygame.K_x: 'X',
             pygame.K_y: 'Y', pygame.K_z: 'Z'}
 
-# 버튼 구현
-class Button:
-    def __init__(self, gameDisplay,img_in, x, y, width, height, img_act, x_act, y_act, action = None):
-        mouse = pygame.mouse.get_pos()
-        click = pygame.mouse.get_pressed()
-        if x + width > mouse[0] > x and y + height > mouse[1] > y:
-            gameDisplay.blit(img_act,(x_act, y_act))
-            if click[0] and action == 'quitgame':
-                pygame.quit()
-                sys.exit()
-            elif click[0] and action == 'mode_one':
-                time.sleep(1)
-                exec(open('mode_one.py',encoding='UTF8').read())  ## 여기서 py파일만 다르게 해주면 해당 py파일이 실행되는 것
-            elif click[0] and action == 'mode_two':
-                time.sleep(1)
-                exec(open('mode_two.py',encoding='UTF8').read())  ## 여기서 py파일만 다르게 해주면 해당 py파일이 실행되는 것
-        else:
-            gameDisplay.blit(img_in,(x,y))
-#여기까지 버튼 구현
-
 def main():
     # Initialize everything
     pygame.mixer.pre_init(11025, -16, 2, 512)
     pygame.init()
     screen = pygame.display.set_mode((500, 500))
-    pygame.display.set_caption('Shooting Game')
+    pygame.display.set_caption('MODE two')
     pygame.mouse.set_visible(1)
 
 # Create the background which will scroll and loop over a set of different
@@ -151,12 +129,12 @@ def main():
         highScorePos.extend([highScoreTexts[x].get_rect(
             topleft=highScorePos[x].bottomleft) for x in range(-3, 0)])
 
-    title, titleRect = load_image('title.png')
+    title, titleRect = load_image('mode2.png')  # mode별로 title 사진 달라지는 곳
     pause,pauseRect = load_image('pause.png',WHITE)
     titleRect.midtop = screen.get_rect().inflate(0, -200).midtop
     pauseRect.midtop = screen.get_rect().inflate(0, -200).midtop
 
-    startText = font.render('START GAME', 1, WHITE)
+    startText = font.render('MODE2 START', 1, WHITE)
     startPos = startText.get_rect(midtop=titleRect.inflate(0, 100).midbottom)
     hiScoreText = font.render('HIGH SCORES', 1, WHITE)
     hiScorePos = hiScoreText.get_rect(topleft=startPos.bottomleft)
@@ -172,7 +150,7 @@ def main():
     musicOffText = font.render('OFF', 1, RED)
     musicOnPos = musicOnText.get_rect(topleft=musicPos.topright)
     musicOffPos = musicOffText.get_rect(topleft=musicPos.topright)
-    quitText = font.render('QUIT', 1, WHITE)
+    quitText = font.render('RETRUN HOME', 1, WHITE)
     quitPos = quitText.get_rect(topleft=musicPos.bottomleft)
     selectText = font.render('> ', 1, WHITE)
     selectPos = selectText.get_rect(topright=startPos.topleft)
@@ -182,14 +160,6 @@ def main():
     soundFX = Database.getSound()
     music = Database.getSound(music=True)
 
-    # 버튼 구현
-    modeImg_one = pygame.image.load("data/mode1.png")
-    modeImg_two = pygame.image.load("data/mode2.png")
-    quitImg = pygame.image.load("data/quiticon.png")
-    clickmodeImg_one = pygame.image.load("data/mode1clicked.png")
-    clickmodeImg_two = pygame.image.load("data/mode2clicked.png")
-    clickQuitImg = pygame.image.load("data/clickedQuitIcon.png")
-    #여기까지 버튼 구현
 
     # pause 구현
     restartText = font.render('RESTART    ', 1,WHITE)
@@ -207,7 +177,6 @@ def main():
         backgroundLoc -= speed
         if backgroundLoc - speed <= speed:
             backgroundLoc = 1500
-        
 
         for event in pygame.event.get():
             if (event.type == pygame.QUIT):
@@ -263,15 +232,7 @@ def main():
         for txt, pos in textOverlays:
             screen.blit(txt, pos)
         pygame.display.flip()
-        # 여기까지 pause 구현
 
-        #버튼 구현
-        modeButton_one = Button(screen,modeImg_one,40,450,40,20,clickmodeImg_one,35,448,'mode_one') # 버튼 클릭시 실행하고 싶은 파일을 'mode_one'에 써주면 된다. 
-        modeButton_two = Button(screen,modeImg_two,210,450,40,20,clickmodeImg_two,205,448,'mode_two')
-        quitButton = Button(screen,quitImg,410,450,40,20,clickQuitImg,405,448,'quitgame')
-        pygame.display.update()
-        clock.tick(15)
-        #여기까지 버튼 구현
 
     while ship.alive:
         clock.tick(clockTime)
@@ -383,7 +344,7 @@ def main():
                     for txt, pos in textOverlays:
                         screen.blit(txt, pos)
                     pygame.display.flip()
-            # 여기까지 pause 구현부분
+
 
      # Collision Detection
         # Aliens
