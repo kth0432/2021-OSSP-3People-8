@@ -35,8 +35,8 @@ class Keyboard(object):
 def main(size):
     scr_size = size
 
-    direction = {None: (0, 0), pygame.K_UP: (0, round(-scr_size*0.004)), pygame.K_DOWN: (0, round(scr_size*0.004)),
-             pygame.K_LEFT: (round(-scr_size*0.004), 0), pygame.K_RIGHT: (round(scr_size*0.004), 0)}
+    direction = {None: (0, 0), pygame.K_UP: (0, -scr_size*0.004), pygame.K_DOWN: (0, scr_size*0.004),
+             pygame.K_LEFT: (-scr_size*0.004, 0), pygame.K_RIGHT: (scr_size*0.004, 0)}
 
     # Initialize everything
     pygame.mixer.pre_init(11025, -16, 2, 512)
@@ -197,7 +197,7 @@ def main(size):
 
         for event in pygame.event.get():
             if (event.type == pygame.QUIT):
-                return
+                return 0
             elif (event.type == pygame.KEYDOWN
                   and event.key == pygame.K_RETURN): # K_RETURN은 enter누르면
                 if showHiScores:
@@ -221,7 +221,7 @@ def main(size):
                         pygame.mixer.music.stop()
                     Database.setSound(int(music), music=True)
                 elif selection == 5:
-                    return
+                    return 0
             elif (event.type == pygame.KEYDOWN
                   and event.key == pygame.K_UP
                   and selection > 1
@@ -265,7 +265,7 @@ def main(size):
             if (event.type == pygame.QUIT
                 or event.type == pygame.KEYDOWN
                     and event.key == pygame.K_ESCAPE):
-                return
+                return 0
             elif (event.type == pygame.KEYDOWN
                   and event.key in direction.keys()):
                 ship.horiz += direction[event.key][0] * speed
@@ -309,7 +309,7 @@ def main(size):
 
                     for event in pygame.event.get():
                         if (event.type == pygame.QUIT):
-                            return
+                            return 0
                         elif (event.type == pygame.KEYDOWN
                             and event.key == pygame.K_RETURN): # K_RETURN은 enter누르면
                             if showHiScores:
@@ -333,7 +333,7 @@ def main(size):
                                     pygame.mixer.music.stop()
                                 Database.setSound(int(music), music=True)
                             elif selection == 5:
-                                return
+                                return 0
                         elif (event.type == pygame.KEYDOWN
                             and event.key == pygame.K_UP
                             and selection > 1
@@ -514,11 +514,11 @@ def main(size):
                 or not isHiScore
                 and event.type == pygame.KEYDOWN
                     and event.key == pygame.K_ESCAPE):
-                return False
+                return 0
             elif (event.type == pygame.KEYDOWN
                   and event.key == pygame.K_RETURN
                   and not isHiScore):
-                return True
+                return scr_size
             elif (event.type == pygame.KEYDOWN
                   and event.key in Keyboard.keys.keys()
                   and len(nameBuffer) < 8):
@@ -533,7 +533,7 @@ def main(size):
                   and event.key == pygame.K_RETURN
                   and len(name) > 0):
                 Database.setScore(hiScores, (name, score, accuracy))
-                return True
+                return scr_size
 
         if isHiScore:
             hiScoreText = font.render('HIGH SCORE!', 1, RED)

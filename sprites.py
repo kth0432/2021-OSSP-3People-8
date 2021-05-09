@@ -79,10 +79,9 @@ class Bomb(pygame.sprite.Sprite):
         self.image = None
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
-        self.radius = 20
-        self.radiusIncrement = 4
+        self.radius = scr_size*0.04
+        self.radiusIncrement = scr_size*0.008
         self.rect = ship.rect
-        print(self.rect)
 
     def update(self):
         self.radius += self.radiusIncrement
@@ -121,7 +120,7 @@ class Powerup(MasterSprite):
             center=(
                 center[0],
                 center[1] +
-                MasterSprite.speed*scr_size*0.002))
+                MasterSprite.speed *scr_size*0.002))
 
 
 class BombPowerup(Powerup):
@@ -136,20 +135,21 @@ class ShieldPowerup(Powerup):
         self.pType = 'shield'
 
 class DoublemissilePowerup(Powerup):
-        def __init__(self):
-            super().__init__('doublemissile')
-            self.pType = 'doublemissile'
+    def __init__(self):
+        super().__init__('doublemissile')
+        self.pType = 'doublemissile'
 
 class Ship(MasterSprite):
     def __init__(self):
         super().__init__()
         self.image, self.rect = load_image('ship.png', -1)
         self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*scr_size/500), round(self.image.get_height()*scr_size/500)))
+        print(self.image.get_width())
         self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
         self.original = self.image
         self.shield, self.rect = load_image('ship_shield.png', -1)
         self.shield = pygame.transform.scale(self.image, (round(self.image.get_width()*scr_size/500), round(self.image.get_height()*scr_size/500)))
-        self.rect = pygame.Rect(0, 0, self.shield.get_width(), self.shield.get_height())
+        self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
         self.screen = pygame.display.get_surface()
         self.area = self.screen.get_rect()
         self.rect.midbottom = (scr_size // 2, scr_size)
