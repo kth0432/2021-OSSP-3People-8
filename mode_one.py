@@ -1,17 +1,22 @@
 import pygame
 import random
 from collections import deque
+import time
+import sys
+import os
 
 from sprites import (MasterSprite, Ship, Alien, Missile, BombPowerup,
                      ShieldPowerup, DoublemissilePowerup, Explosion, Siney, Spikey, Fasty,
                      Roundy, Crawly)
 from database import Database
 from load import load_image, load_sound, load_music
+import os
 
 if not pygame.mixer:
     print('Warning, sound disabled')
 if not pygame.font:
     print('Warning, fonts disabled')
+
 
 # BLUE = (0, 0, 255)
 RED = (255, 0, 0)
@@ -19,9 +24,24 @@ BLACK= ( 0,  0,  0)
 WHITE= (255,255,255)
 GREEN= ( 0,255,  0)
 
-direction = {None: (0, 0), pygame.K_UP: (0, -2), pygame.K_DOWN: (0, 2),
-             pygame.K_LEFT: (-2, 0), pygame.K_RIGHT: (2, 0)}
-
+class Button:
+    def __init__(self, gameDisplay,img_in, x, y, width, height, img_act, x_act, y_act, action = None):
+        mouse = pygame.mouse.get_pos()
+        click = pygame.mouse.get_pressed()
+        if x + width > mouse[0] > x and y + height > mouse[1] > y:
+            gameDisplay.blit(img_act,(x_act, y_act))
+            if click[0] and action == 'quitgame':
+                pygame.quit()
+                sys.exit()
+            elif click[0] and action == 'mode_one':
+                time.sleep(1)
+                exec(open('mode_one.py',encoding='UTF8').read())  ## 여기서 py파일만 다르게 해주면 해당 py파일이 실행되는 것
+            elif click[0] and action == 'mode_two':
+                time.sleep(1)
+                exec(open('mode_two.py',encoding='UTF8').read())  ## 여기서 py파일만 다르게 해주면 해당 py파일이 실행되는 것
+        else:
+            gameDisplay.blit(img_in,(x,y))
+#여기까지 버튼 구현
 
 class Keyboard(object):
     keys = {pygame.K_a: 'A', pygame.K_b: 'B', pygame.K_c: 'C', pygame.K_d: 'D',
@@ -32,27 +52,33 @@ class Keyboard(object):
             pygame.K_u: 'U', pygame.K_v: 'V', pygame.K_w: 'W', pygame.K_x: 'X',
             pygame.K_y: 'Y', pygame.K_z: 'Z'}
 
-def main():
+def main(scr, level):
+    scr_size, level_size = scr, level
+    user_size = round(scr_size * level_size)
+
+    direction = {None: (0, 0), pygame.K_UP: (0, -scr_size*0.004), pygame.K_DOWN: (0, scr_size*0.004),
+             pygame.K_LEFT: (-scr_size*0.004, 0), pygame.K_RIGHT: (scr_size*0.004, 0)}
+
     # Initialize everything
     pygame.mixer.pre_init(11025, -16, 2, 512)
     pygame.init()
-    screen = pygame.display.set_mode((500, 500))
-    pygame.display.set_caption('MODE one')
+    screen = pygame.display.set_mode((scr_size, scr_size), pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.RESIZABLE)
+    pygame.display.set_caption('Shooting Game')
     pygame.mouse.set_visible(1)
 
 # Create the background which will scroll and loop over a set of different
 # size stars
-    background = pygame.Surface((500, 2000))
+    background = pygame.Surface((scr_size, scr_size*4))
     background = background.convert()
     background.fill((0, 0, 0))
 
-    backgroundLoc = 1500
+    backgroundLoc = scr_size*3
     finalStars = deque()
-    for y in range(0, 1500, 30):
-        size = random.randint(2, 5)
-        x = random.randint(0, 500 - size)
-        if y <= 500:
-            finalStars.appendleft((x, y + 1500, size))
+    for y in range(0, scr_size*3, round(scr_size*0.06)):
+        size = random.randint(round(scr_size*0.004), round(scr_size*0.01))
+        x = random.randint(0, scr_size - size)
+        if y <= scr_size:
+            finalStars.appendleft((x, y + scr_size*3, size))
         pygame.draw.rect(
             background, (255, 0, 0), pygame.Rect(x, y, size, size))
     while finalStars:
@@ -109,7 +135,7 @@ def main():
     betweenWaveCount = betweenWaveTime
     betweenDoubleTime = 5 * clockTime
     betweenDoubleCount = betweenDoubleTime
-    font = pygame.font.Font(None, 36)
+    font = pygame.font.Font(None, round(scr_size*0.065))
 
     inMenu = True
 
@@ -118,24 +144,28 @@ def main():
                       font.render("SCORE", 1, RED),
                       font.render("ACCURACY", 1, RED)]
     highScorePos = [highScoreTexts[0].get_rect(
-                      topleft=screen.get_rect().inflate(-100, -100).topleft),
+                      topleft=screen.get_rect().inflate(-scr_size*0.2, -scr_size*0.2).topleft),
                     highScoreTexts[1].get_rect(
-                      midtop=screen.get_rect().inflate(-100, -100).midtop),
+                      midtop=screen.get_rect().inflate(-scr_size*0.2, -scr_size*0.2).midtop),
                     highScoreTexts[2].get_rect(
-                      topright=screen.get_rect().inflate(-100, -100).topright)]
+                      topright=screen.get_rect().inflate(-scr_size*0.2, -scr_size*0.2).topright)]
     for hs in hiScores:
         highScoreTexts.extend([font.render(str(hs[x]), 1, WHITE)
                                for x in range(3)])
         highScorePos.extend([highScoreTexts[x].get_rect(
             topleft=highScorePos[x].bottomleft) for x in range(-3, 0)])
 
-    title, titleRect = load_image('mode1.png')  # mode별로 title 사진 달라지는 곳
+    title, titleRect = load_image('title.png')
+    title = pygame.transform.scale(title, (round(title.get_width()*scr_size/500), round(title.get_height()*scr_size/500)))
+    titleRect = pygame.Rect(0, 0, title.get_width(), title.get_height())
     pause,pauseRect = load_image('pause.png',WHITE)
-    titleRect.midtop = screen.get_rect().inflate(0, -200).midtop
-    pauseRect.midtop = screen.get_rect().inflate(0, -200).midtop
+    pause = pygame.transform.scale(pause, (round(pause.get_width()*scr_size/500), round(pause.get_height()*scr_size/500)))
+    pauseRect = pygame.Rect(0, 0, pause.get_width(), pause.get_height())
+    titleRect.midtop = screen.get_rect().inflate(0, -scr_size*0.4).midtop
+    pauseRect.midtop = screen.get_rect().inflate(0, -scr_size*0.4).midtop
 
-    startText = font.render('MODE1 START', 1, WHITE)
-    startPos = startText.get_rect(midtop=titleRect.inflate(0, 100).midbottom)
+    startText = font.render('START GAME', 1, WHITE)
+    startPos = startText.get_rect(midtop=titleRect.inflate(0, scr_size*0.2).midbottom)
     hiScoreText = font.render('HIGH SCORES', 1, WHITE)
     hiScorePos = hiScoreText.get_rect(topleft=startPos.bottomleft)
     fxText = font.render('SOUND FX ', 1, WHITE)
@@ -150,7 +180,7 @@ def main():
     musicOffText = font.render('OFF', 1, RED)
     musicOnPos = musicOnText.get_rect(topleft=musicPos.topright)
     musicOffPos = musicOffText.get_rect(topleft=musicPos.topright)
-    quitText = font.render('RETRUN HOME', 1, WHITE)
+    quitText = font.render('QUIT', 1, WHITE)
     quitPos = quitText.get_rect(topleft=musicPos.bottomleft)
     selectText = font.render('> ', 1, WHITE)
     selectPos = selectText.get_rect(topright=startPos.topleft)
@@ -160,32 +190,45 @@ def main():
     soundFX = Database.getSound()
     music = Database.getSound(music=True)
 
+    # 버튼 구현
+    modeImg_one = pygame.image.load("data/mode1.png")
+    modeImg_two = pygame.image.load("data/mode2.png")
+    quitImg = pygame.image.load("data/quiticon.png")
+    clickmodeImg_one = pygame.image.load("data/mode1clicked.png")
+    clickmodeImg_two = pygame.image.load("data/mode2clicked.png")
+    clickQuitImg = pygame.image.load("data/clickedQuitIcon.png")
+    #여기까지 버튼 구현
 
     # pause 구현
     restartText = font.render('RESTART    ', 1,WHITE)
-    restartPos = restartText.get_rect(midtop=titleRect.inflate(0, 100).midbottom)
+    restartPos = restartText.get_rect(midtop=titleRect.inflate(0, scr_size*0.2).midbottom)
 
     if music and pygame.mixer:
         pygame.mixer.music.play(loops=-1)
 
     while inMenu:
+        scr_x , scr_y = pygame.display.get_surface().get_size()
+        if scr_size != scr_x or scr_size != scr_y :
+            return min(scr_x, scr_y), level_size    # 메뉴화면에서만 창 사이즈 크기 확인하고, 변경되면 main 재시작
         clock.tick(clockTime)
 
         screen.blit(
             background, (0, 0), area=pygame.Rect(
-                0, backgroundLoc, 500, 500))
+                0, backgroundLoc, scr_size, scr_size))
         backgroundLoc -= speed
         if backgroundLoc - speed <= speed:
-            backgroundLoc = 1500
+            backgroundLoc = scr_size*3
 
         for event in pygame.event.get():
             if (event.type == pygame.QUIT):
-                return
+                pygame.quit()
+                sys.exit()
             elif (event.type == pygame.KEYDOWN
                   and event.key == pygame.K_RETURN): # K_RETURN은 enter누르면
                 if showHiScores:
                     showHiScores = False
                 elif selection == 1:
+                    screen = pygame.display.set_mode((scr_size, scr_size))  # 리사이즈 불가능하도록 변경
                     inMenu = False
                     ship.initializeKeys()
                 elif selection == 2:
@@ -203,7 +246,8 @@ def main():
                         pygame.mixer.music.stop()
                     Database.setSound(int(music), music=True)
                 elif selection == 5:
-                    return
+                     pygame.quit()
+                     sys.exit()
             elif (event.type == pygame.KEYDOWN
                   and event.key == pygame.K_UP
                   and selection > 1
@@ -231,8 +275,15 @@ def main():
             screen.blit(title, titleRect)
         for txt, pos in textOverlays:
             screen.blit(txt, pos)
-        pygame.display.flip()
+        # 여기까지 pause 구현
 
+        #버튼 구현
+        modeButton_one = Button(screen,modeImg_one,round(scr_size*0.08),round(scr_size*0.9),round(scr_size*0.08),round(scr_size*0.04),clickmodeImg_one,round(scr_size*0.07),round(scr_size*0.896),'mode_one') # 버튼 클릭시 실행하고 싶은 파일을 'mode_one'에 써주면 된다. 
+        modeButton_two = Button(screen,modeImg_two,round(scr_size*0.42),round(scr_size*0.9),round(scr_size*0.08),round(scr_size*0.04),clickmodeImg_two,round(scr_size*0.41),round(scr_size*0.896),'mode_two')
+        quitButton = Button(screen,quitImg,round(scr_size*0.82),round(scr_size*0.9),round(scr_size*0.08),round(scr_size*0.04),clickQuitImg,round(scr_size*0.81),round(scr_size*0.896),'quitgame')
+        
+        pygame.display.flip()
+        #여기까지 버튼 구현
 
     while ship.alive:
         clock.tick(clockTime)
@@ -248,7 +299,8 @@ def main():
             if (event.type == pygame.QUIT
                 or event.type == pygame.KEYDOWN
                     and event.key == pygame.K_ESCAPE):
-                return
+                pygame.quit()
+                sys.exit()
             elif (event.type == pygame.KEYDOWN
                   and event.key in direction.keys()):
                 ship.horiz += direction[event.key][0] * speed
@@ -285,14 +337,15 @@ def main():
 
                     screen.blit(
                         background, (0, 0), area=pygame.Rect(
-                            0, backgroundLoc, 500, 500))
+                            0, backgroundLoc, scr_size, scr_size))
                     backgroundLoc -= speed
                     if backgroundLoc - speed <= speed:
-                        backgroundLoc = 1500
+                        backgroundLoc = scr_size*3
 
                     for event in pygame.event.get():
                         if (event.type == pygame.QUIT):
-                            return
+                            pygame.quit()
+                            sys.exit()
                         elif (event.type == pygame.KEYDOWN
                             and event.key == pygame.K_RETURN):
                             if showHiScores:
@@ -315,7 +368,8 @@ def main():
                                     pygame.mixer.music.stop()
                                 Database.setSound(int(music), music=True)
                             elif selection == 5:
-                                return
+                                pygame.quit()
+                                sys.exit()
                         elif (event.type == pygame.KEYDOWN
                             and event.key == pygame.K_UP
                             and selection > 1
@@ -471,10 +525,10 @@ def main():
      # Update and draw all sprites and text
         screen.blit(
             background, (0, 0), area=pygame.Rect(
-                0, backgroundLoc, 500, 500))
+                0, backgroundLoc, scr_size, scr_size))
         backgroundLoc -= speed
         if backgroundLoc - speed <= speed:
-            backgroundLoc = 1500
+            backgroundLoc = scr_size*3
         allsprites.update()
         allsprites.draw(screen)
         alldrawings.update()
@@ -496,11 +550,12 @@ def main():
                 or not isHiScore
                 and event.type == pygame.KEYDOWN
                     and event.key == pygame.K_ESCAPE):
-                return False
+                pygame.quit()
+                sys.exit()
             elif (event.type == pygame.KEYDOWN
                   and event.key == pygame.K_RETURN
                   and not isHiScore):
-                return True
+                return scr_size, level_size
             elif (event.type == pygame.KEYDOWN
                   and event.key in Keyboard.keys.keys()
                   and len(nameBuffer) < 8):
@@ -515,7 +570,7 @@ def main():
                   and event.key == pygame.K_RETURN
                   and len(name) > 0):
                 Database.setScore(hiScores, (name, score, accuracy))
-                return True
+                return scr_size, level_size
 
         if isHiScore:
             hiScoreText = font.render('HIGH SCORE!', 1, RED)
@@ -543,10 +598,10 @@ def main():
     # Update and draw all sprites
         screen.blit(
             background, (0, 0), area=pygame.Rect(
-                0, backgroundLoc, 500, 500))
+                0, backgroundLoc, scr_size, scr_size))
         backgroundLoc -= speed
         if backgroundLoc - speed <= 0:
-            backgroundLoc = 1500
+            backgroundLoc = scr_size*3
         allsprites.update()
         allsprites.draw(screen)
         alldrawings.update()
@@ -555,6 +610,4 @@ def main():
         pygame.display.flip()
 
 
-if __name__ == '__main__':
-    while(main()):
-        pass
+

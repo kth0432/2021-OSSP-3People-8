@@ -4,6 +4,15 @@ import math
 from load import load_image
 
 
+user_size = 500
+level_size = 1
+scr_size = user_size * level_size
+
+def get_size(user, level) :
+    global user_size, level_size, scr_size
+    user_size, level_size = user, level
+    scr_size = round(user_size * level_size)
+
 class MasterSprite(pygame.sprite.Sprite):
     allsprites = None
     speed = None
@@ -16,7 +25,9 @@ class Explosion(MasterSprite):
     def __init__(self):
         super().__init__()
         self.image, self.rect = load_image('explosion.png', -1)
-        self.linger = MasterSprite.speed * 3
+        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*user_size/500), round(self.image.get_height()*user_size/500)))
+        self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
+        self.linger = round(MasterSprite.speed *user_size*0.006)
 
     @classmethod
     def position(cls, loc):
@@ -41,6 +52,8 @@ class Missile(MasterSprite):
     def __init__(self):
         super().__init__()
         self.image, self.rect = load_image('missile.png', -1)
+        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*user_size/500), round(self.image.get_height()*user_size/500)))
+        self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
 
@@ -57,7 +70,7 @@ class Missile(MasterSprite):
         self.remove(self.allsprites, self.active)
 
     def update(self):
-        newpos = self.rect.move(0, -4 * MasterSprite.speed)
+        newpos = self.rect.move(0, -scr_size*0.008)
         self.rect = newpos
         if self.rect.top < self.area.top:
             self.table()
@@ -69,8 +82,8 @@ class Bomb(pygame.sprite.Sprite):
         self.image = None
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
-        self.radius = 20
-        self.radiusIncrement = 4
+        self.radius = scr_size*0.04
+        self.radiusIncrement = scr_size*0.008
         self.rect = ship.rect
 
     def update(self):
@@ -90,6 +103,8 @@ class Powerup(MasterSprite):
     def __init__(self, kindof):
         super().__init__()
         self.image, self.rect = load_image(kindof + '_powerup.png', -1)
+        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*user_size/500), round(self.image.get_height()*user_size/500)))
+        self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
         self.original = self.image
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
@@ -108,7 +123,7 @@ class Powerup(MasterSprite):
             center=(
                 center[0],
                 center[1] +
-                MasterSprite.speed))
+                MasterSprite.speed *scr_size*0.002))
 
 
 class BombPowerup(Powerup):
@@ -123,19 +138,23 @@ class ShieldPowerup(Powerup):
         self.pType = 'shield'
 
 class DoublemissilePowerup(Powerup):
-        def __init__(self):
-            super().__init__('doublemissile')
-            self.pType = 'doublemissile'
+    def __init__(self):
+        super().__init__('doublemissile')
+        self.pType = 'doublemissile'
 
 class Ship(MasterSprite):
     def __init__(self):
         super().__init__()
         self.image, self.rect = load_image('ship.png', -1)
+        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*user_size/500), round(self.image.get_height()*user_size/500)))
+        self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
         self.original = self.image
         self.shield, self.rect = load_image('ship_shield.png', -1)
+        self.shield = pygame.transform.scale(self.shield, (round(self.shield.get_width()*user_size/500), round(self.shield.get_height()*user_size/500)))
+        self.rect = pygame.Rect(0, 0, self.shield.get_width(), self.shield.get_height())
         self.screen = pygame.display.get_surface()
         self.area = self.screen.get_rect()
-        self.rect.midbottom = (self.screen.get_width() // 2, self.area.bottom)
+        self.rect.midbottom = (scr_size // 2, scr_size)
         self.radius = max(self.rect.width, self.rect.height)
         self.alive = True
         self.shieldUp = False
@@ -147,13 +166,13 @@ class Ship(MasterSprite):
         self.vert = 0
         self.horiz = 0
         if keyState[pygame.K_w]:
-            self.vert -= 2 * MasterSprite.speed
+            self.vert -= MasterSprite.speed *scr_size*0.004
         if keyState[pygame.K_a]:
-            self.horiz -= 2 * MasterSprite.speed
+            self.horiz -= MasterSprite.speed *scr_size*0.004
         if keyState[pygame.K_s]:
-            self.vert += 2 * MasterSprite.speed
+            self.vert += MasterSprite.speed *scr_size*0.004
         if keyState[pygame.K_d]:
-            self.horiz += 2 * MasterSprite.speed
+            self.horiz += MasterSprite.speed *scr_size*0.004
 
     def update(self):
         newpos = self.rect.move((self.horiz, self.vert))
@@ -188,8 +207,9 @@ class Alien(MasterSprite):
 
     def __init__(self, color):
         super().__init__()
-        self.image, self.rect = load_image(
-            'space_invader_' + color + '.png', -1)
+        self.image, self.rect = load_image('space_invader_' + color + '.png', -1)
+        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*user_size/500), round(self.image.get_height()*user_size/500)))
+        self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
         self.initialRect = self.rect
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
@@ -221,12 +241,12 @@ class Alien(MasterSprite):
 
     def update(self):
         horiz, vert = self.moveFunc()
-        if horiz + self.initialRect.x > 500:
-            horiz -= 500 + self.rect.width
+        if horiz + self.initialRect.x > scr_size:
+            horiz -= scr_size + self.rect.width
         elif horiz + self.initialRect.x < 0 - self.rect.width:
-            horiz += 500 + self.rect.width
+            horiz += scr_size + self.rect.width
         self.rect = self.initialRect.move((horiz, self.loc + vert))
-        self.loc = self.loc + MasterSprite.speed
+        self.loc = self.loc + MasterSprite.speed *scr_size*0.002
         if self.rect.top > self.area.bottom:
             self.table()
             Alien.numOffScreen += 1
@@ -292,4 +312,4 @@ class Crawly(Alien):
             self.table()
             Alien.numOffScreen += 1
         self.rect = self.initialRect.move((horiz, vert))
-        self.loc = self.loc + MasterSprite.speed
+        self.loc = self.loc + MasterSprite.speed *scr_size*0.006
