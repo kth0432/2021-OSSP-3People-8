@@ -14,7 +14,6 @@ if not pygame.mixer:
 if not pygame.font:
     print('Warning, fonts disabled')
 
-scr_size = 500
 
 # BLUE = (0, 0, 255)
 RED = (255, 0, 0)
@@ -32,8 +31,9 @@ class Keyboard(object):
             pygame.K_u: 'U', pygame.K_v: 'V', pygame.K_w: 'W', pygame.K_x: 'X',
             pygame.K_y: 'Y', pygame.K_z: 'Z'}
 
-def main(size):
-    scr_size = size
+def main(scr, level):
+    scr_size, level_size = scr, level
+    user_size = round(scr_size * level_size)
 
     direction = {None: (0, 0), pygame.K_UP: (0, -scr_size*0.004), pygame.K_DOWN: (0, scr_size*0.004),
              pygame.K_LEFT: (-scr_size*0.004, 0), pygame.K_RIGHT: (scr_size*0.004, 0)}
@@ -184,8 +184,8 @@ def main(size):
 
     while inMenu:
         scr_x , scr_y = pygame.display.get_surface().get_size()
-        if scr_size != scr_x or scr_size != scr_y : 
-            return min(scr_x, scr_y)    # 메뉴화면에서만 창 사이즈 크기 확인하고, 변경되면 main 재시작
+        if scr_size != scr_x or scr_size != scr_y :
+            return min(scr_x, scr_y), level_size    # 메뉴화면에서만 창 사이즈 크기 확인하고, 변경되면 main 재시작
         clock.tick(clockTime)
 
         screen.blit(
@@ -197,7 +197,7 @@ def main(size):
 
         for event in pygame.event.get():
             if (event.type == pygame.QUIT):
-                return 0
+                return 0, 1
             elif (event.type == pygame.KEYDOWN
                   and event.key == pygame.K_RETURN): # K_RETURN은 enter누르면
                 if showHiScores:
@@ -221,7 +221,7 @@ def main(size):
                         pygame.mixer.music.stop()
                     Database.setSound(int(music), music=True)
                 elif selection == 5:
-                    return 0
+                    return 0, 1
             elif (event.type == pygame.KEYDOWN
                   and event.key == pygame.K_UP
                   and selection > 1
@@ -265,7 +265,7 @@ def main(size):
             if (event.type == pygame.QUIT
                 or event.type == pygame.KEYDOWN
                     and event.key == pygame.K_ESCAPE):
-                return 0
+                return 0, 1
             elif (event.type == pygame.KEYDOWN
                   and event.key in direction.keys()):
                 ship.horiz += direction[event.key][0] * speed
@@ -309,7 +309,7 @@ def main(size):
 
                     for event in pygame.event.get():
                         if (event.type == pygame.QUIT):
-                            return 0
+                            return 0, 1
                         elif (event.type == pygame.KEYDOWN
                             and event.key == pygame.K_RETURN): # K_RETURN은 enter누르면
                             if showHiScores:
@@ -333,7 +333,7 @@ def main(size):
                                     pygame.mixer.music.stop()
                                 Database.setSound(int(music), music=True)
                             elif selection == 5:
-                                return 0
+                                return 0, 1
                         elif (event.type == pygame.KEYDOWN
                             and event.key == pygame.K_UP
                             and selection > 1
@@ -514,11 +514,11 @@ def main(size):
                 or not isHiScore
                 and event.type == pygame.KEYDOWN
                     and event.key == pygame.K_ESCAPE):
-                return 0
+                return 0, 1
             elif (event.type == pygame.KEYDOWN
                   and event.key == pygame.K_RETURN
                   and not isHiScore):
-                return scr_size
+                return scr_size, level_size
             elif (event.type == pygame.KEYDOWN
                   and event.key in Keyboard.keys.keys()
                   and len(nameBuffer) < 8):
@@ -533,7 +533,7 @@ def main(size):
                   and event.key == pygame.K_RETURN
                   and len(name) > 0):
                 Database.setScore(hiScores, (name, score, accuracy))
-                return scr_size
+                return scr_size, level_size
 
         if isHiScore:
             hiScoreText = font.render('HIGH SCORE!', 1, RED)

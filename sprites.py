@@ -4,11 +4,14 @@ import math
 from load import load_image
 
 
-scr_size = 500
+user_size = 500
+level_size = 1
+scr_size = user_size * level_size
 
-def get_size(size) :
-    global scr_size
-    scr_size = size
+def get_size(user, level) :
+    global user_size, level_size, scr_size
+    user_size, level_size = user, level
+    scr_size = round(user_size * level_size)
 
 class MasterSprite(pygame.sprite.Sprite):
     allsprites = None
@@ -22,9 +25,9 @@ class Explosion(MasterSprite):
     def __init__(self):
         super().__init__()
         self.image, self.rect = load_image('explosion.png', -1)
-        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*scr_size/500), round(self.image.get_height()*scr_size/500)))
+        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*user_size/500), round(self.image.get_height()*user_size/500)))
         self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
-        self.linger = round(MasterSprite.speed *scr_size*0.006)
+        self.linger = round(MasterSprite.speed *user_size*0.006)
 
     @classmethod
     def position(cls, loc):
@@ -49,7 +52,7 @@ class Missile(MasterSprite):
     def __init__(self):
         super().__init__()
         self.image, self.rect = load_image('missile.png', -1)
-        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*scr_size/500), round(self.image.get_height()*scr_size/500)))
+        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*user_size/500), round(self.image.get_height()*user_size/500)))
         self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
@@ -100,7 +103,7 @@ class Powerup(MasterSprite):
     def __init__(self, kindof):
         super().__init__()
         self.image, self.rect = load_image(kindof + '_powerup.png', -1)
-        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*scr_size/500), round(self.image.get_height()*scr_size/500)))
+        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*user_size/500), round(self.image.get_height()*user_size/500)))
         self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
         self.original = self.image
         screen = pygame.display.get_surface()
@@ -143,11 +146,11 @@ class Ship(MasterSprite):
     def __init__(self):
         super().__init__()
         self.image, self.rect = load_image('ship.png', -1)
-        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*scr_size/500), round(self.image.get_height()*scr_size/500)))
+        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*user_size/500), round(self.image.get_height()*user_size/500)))
         self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
         self.original = self.image
         self.shield, self.rect = load_image('ship_shield.png', -1)
-        self.shield = pygame.transform.scale(self.shield, (round(self.shield.get_width()*scr_size/500), round(self.shield.get_height()*scr_size/500)))
+        self.shield = pygame.transform.scale(self.shield, (round(self.shield.get_width()*user_size/500), round(self.shield.get_height()*user_size/500)))
         self.rect = pygame.Rect(0, 0, self.shield.get_width(), self.shield.get_height())
         self.screen = pygame.display.get_surface()
         self.area = self.screen.get_rect()
@@ -205,7 +208,7 @@ class Alien(MasterSprite):
     def __init__(self, color):
         super().__init__()
         self.image, self.rect = load_image('space_invader_' + color + '.png', -1)
-        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*scr_size/500), round(self.image.get_height()*scr_size/500)))
+        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*user_size/500), round(self.image.get_height()*user_size/500)))
         self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
         self.initialRect = self.rect
         screen = pygame.display.get_surface()
