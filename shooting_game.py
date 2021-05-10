@@ -26,6 +26,7 @@ GREEN= ( 0,255,  0)
 
 class Button:
     def __init__(self, gameDisplay,img_in, x, y, width, height, img_act, x_act, y_act, action = None):
+        self.lvl_size = 0
         mouse = pygame.mouse.get_pos()
         click = pygame.mouse.get_pressed()
         if x + width > mouse[0] > x and y + height > mouse[1] > y:
@@ -34,11 +35,13 @@ class Button:
                 pygame.quit()
                 sys.exit()
             elif click[0] and action == 'mode_one':
-                time.sleep(1)
-                exec(open('mode_one.py',encoding='UTF8').read())  ## 여기서 py파일만 다르게 해주면 해당 py파일이 실행되는 것
+                self.lvl_size = -1
+                # time.sleep(1)
+                # exec(open('mode_one.py',encoding='UTF8').read())  ## 여기서 py파일만 다르게 해주면 해당 py파일이 실행되는 것
             elif click[0] and action == 'mode_two':
-                time.sleep(1)
-                exec(open('mode_two.py',encoding='UTF8').read())  ## 여기서 py파일만 다르게 해주면 해당 py파일이 실행되는 것
+                self.lvl_size = -2
+                # time.sleep(1)
+                # exec(open('mode_two.py',encoding='UTF8').read())  ## 여기서 py파일만 다르게 해주면 해당 py파일이 실행되는 것
         else:
             gameDisplay.blit(img_in,(x,y))
 #여기까지 버튼 구현
@@ -281,6 +284,11 @@ def main(scr, level):
         modeButton_one = Button(screen,modeImg_one,round(scr_size*0.08),round(scr_size*0.9),round(scr_size*0.08),round(scr_size*0.04),clickmodeImg_one,round(scr_size*0.07),round(scr_size*0.896),'mode_one') # 버튼 클릭시 실행하고 싶은 파일을 'mode_one'에 써주면 된다. 
         modeButton_two = Button(screen,modeImg_two,round(scr_size*0.42),round(scr_size*0.9),round(scr_size*0.08),round(scr_size*0.04),clickmodeImg_two,round(scr_size*0.41),round(scr_size*0.896),'mode_two')
         quitButton = Button(screen,quitImg,round(scr_size*0.82),round(scr_size*0.9),round(scr_size*0.08),round(scr_size*0.04),clickQuitImg,round(scr_size*0.81),round(scr_size*0.896),'quitgame')
+
+        if modeButton_one.lvl_size == -1 :
+            return scr_size, -1
+        if modeButton_two.lvl_size == -2 :
+            return scr_size, -2
         
         pygame.display.flip()
         #여기까지 버튼 구현
