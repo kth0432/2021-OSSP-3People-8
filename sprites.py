@@ -282,7 +282,7 @@ class Roundy(Alien):
 
 class Spikey(Alien):
     def __init__(self):
-        super().__init__('blue')
+        super().__init__('orange')
         self.slope = random.choice(list(x for x in range(-3, 3) if x != 0))
         self.period = random.choice(list(4 * x for x in range(10, 41)))
         self.moveFunc = lambda: (self.slope * (self.loc % self.period)
