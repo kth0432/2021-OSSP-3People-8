@@ -1,0 +1,94 @@
+# ================================================================================
+# AWS EC2에 올린 Main.py (./app)
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+id_list = ['', 'A']
+pw_list = ['aaaa', 'A']
+record_list = [['A', 40, 0.4]]
+
+class Account(BaseModel):
+    id: str
+    password: str
+
+class Record(BaseModel):
+    id: str
+    score: int
+    accuracy: float
+
+app = FastAPI()
+
+@app.get("/")
+async def hello():
+    return "osspc-2021-1-8"
+
+@app.post("/create_account/")
+async def create_id(account: Account):
+    if account.id not in id_list :
+        id_list.append(account.id)
+        pw_list.append(account.password)
+        return "Account created"
+    else :
+        return "Exist same ID"
+
+@app.post("/login/")
+async def find_id(account: Account):
+    for i in range(len(id_list)) :
+        if id_list[i] == account.id :
+            if pw_list[i] == account.password :
+                return "Login Success"
+            else :
+                return "Login Failed"
+    return "Login Failed"
+
+@app.post("/create_account/")
+async def create_id(account: Account):
+    if account.id not in id_list :
+        id_list.append(account.id)
+        pw_list.append(account.password)
+        return "Account created"
+    else :
+        return "Exist same ID"
+
+@app.post("/save_record/")
+async def score_record(record: Record):
+    record_list.append([record.id, record.score, record.accuracy])
+    return "Saved Successfully"
+
+@app.get("/get_record/")
+async def get_record():
+    return record_list
+
+@app.get("/get_idlist/")
+async def get_idlist():
+    return id_list
+
+
+# ================================================================================
+# Dockerfile_fastapi (./)
+
+FROM python:3.8-alpine
+
+RUN pip install fastapi uvicorn
+
+EXPOSE 80
+
+COPY ./app /app
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
+
+# ================================================================================
+# docker-compose.yml (./)
+
+version: "3"
+
+services:
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile_fastapi
+    restart: always
+    ports:
+      - "80:80"
+    container_name: fastapicontainer
