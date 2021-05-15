@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
         user_size = round(scr_size / level_size)
         sprites.get_size(user_size, level_size)
-        time.sleep(0.1)
+        time.sleep(0.1) # linux 창크기 조절 오류때문에 추가
 
         if level_size == 1 :
             scr_size, level_size = mode_one.main(scr_size, level_size)
