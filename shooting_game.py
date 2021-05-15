@@ -291,7 +291,7 @@ def main(scr, level, id):
                         if i % 3 == 0 : score_id = Scores[i][2:-1]
                         elif i % 3 == 1 : score_score = Scores[i][:]
                         else : hiScores.append([score_id, score_score, Scores[i][:-1]])
-
+                    hiScores = sorted(hiScores, key=lambda h: h[1], reverse=True)
                     print(hiScores)
                     highScoreTexts = [font.render("NAME", 1, RED), font.render("SCORE", 1, RED), font.render("ACCURACY", 1, RED)]
                     for hs in hiScores:
