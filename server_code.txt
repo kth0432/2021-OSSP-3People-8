@@ -6,7 +6,9 @@ from pydantic import BaseModel
 
 id_list = ['', 'A']
 pw_list = ['aaaa', 'A']
+language_list = ['ENG', 'KOR']
 record_list = [['A', 40, 0.4]]
+achievement_list = [['A', 100 , 40]]
 
 class Account(BaseModel):
     id: str
@@ -16,6 +18,15 @@ class Record(BaseModel):
     id: str
     score: int
     accuracy: float
+
+class Achievement(BaseModel) :
+    id: str
+    shoot: int
+    kill: int
+
+class Language(BaseModel) :
+    id: str
+    language: str
 
 app = FastAPI()
 
@@ -28,6 +39,8 @@ async def create_id(account: Account):
     if account.id not in id_list :
         id_list.append(account.id)
         pw_list.append(account.password)
+        language_list.append("ENG")
+        achievement_list.append([account.id, 0, 0])
         return "Account created"
     else :
         return "Exist same ID"
@@ -37,19 +50,23 @@ async def find_id(account: Account):
     for i in range(len(id_list)) :
         if id_list[i] == account.id :
             if pw_list[i] == account.password :
-                return "Login Success"
-            else :
-                return "Login Failed"
+                return "Login Successed"
     return "Login Failed"
 
-@app.post("/create_account/")
-async def create_id(account: Account):
-    if account.id not in id_list :
-        id_list.append(account.id)
-        pw_list.append(account.password)
-        return "Account created"
-    else :
-        return "Exist same ID"
+@app.post("/record_language/")
+async def record_language(lan: Language):
+    for i in range(len(id_list)) :
+        if id_list[i] == lan.id :
+            language_list[i] = lan.language
+            return "Recorded"
+    return "Not Found"
+
+@app.post("/get_language/")
+async def get_language(lan: Language):
+    for i in range(len(id_list)) :
+        if id_list[i] == lan.id :
+            return language_list[i]
+    return "Not Found"
 
 @app.post("/save_record/")
 async def score_record(record: Record):
@@ -63,6 +80,26 @@ async def get_record():
 @app.get("/get_idlist/")
 async def get_idlist():
     return id_list
+
+@app.get("/get_lanlist/")
+async def get_lanlist():
+    return language_list
+
+@app.post("/record_achievement/")
+async def get_achievement(achievement: Achievement):
+    for i in range(len(achievement_list)) :
+        if achievement_list[i][0] == achievement.id :
+            achievement_list[i][1] += achievement.shoot
+            achievement_list[i][2] += achievement.kill
+            return "Recorded"
+    return "Not found"
+
+@app.post("/get_achievement/")
+async def get_achievement(achievement: Achievement):
+    for i in range(len(achievement_list)) :
+        if achievement_list[i][0] == achievement.id :
+            return achievement_list[i]
+    return "Not found"
 
 
 # ================================================================================

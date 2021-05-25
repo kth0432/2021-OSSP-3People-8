@@ -142,6 +142,15 @@ class DoublemissilePowerup(Powerup):
         super().__init__('doublemissile')
         self.pType = 'doublemissile'
 
+class CoinPowerup(Powerup):
+    def __init__(self):
+        super().__init__('coin')
+        self.pType = 'coin'
+class CoinTwoPowerup(Powerup):
+    def __init__(self):
+        super().__init__('coin2')
+        self.pType = 'coin2'
+
 class Ship(MasterSprite):
     def __init__(self):
         super().__init__()
@@ -160,6 +169,7 @@ class Ship(MasterSprite):
         self.shieldUp = False
         self.vert = 0
         self.horiz = 0
+        self.lives = 3
 
     def initializeKeys(self):
         keyState = pygame.key.get_pressed()
@@ -199,6 +209,14 @@ class Ship(MasterSprite):
 
     def bomb(self):
         return Bomb(self)
+
+    ## life 구현부분
+    def draw_lives(self,surface, x, y):
+        for i in range(self.lives):
+            self.img_rect = self.image.get_rect()
+            self.img_rect.x = x + 30 * i
+            self.img_rect.y = y
+            surface.blit(self.image, self.img_rect)
 
 
 class Alien(MasterSprite):
