@@ -3,7 +3,6 @@ import pygame
 import random
 from collections import deque
 import sys
-# from pygame.font import Font
 import grequests
 
 from sprites import (MasterSprite, Ship, Alien, Missile, BombPowerup,CoinPowerup,CoinTwoPowerup,
@@ -91,6 +90,13 @@ def main(scr, level, id):
         coinypose = scr_size*0.8
         achievement = scr_size/3000
         achievementpos = scr_size*0.25
+        hi_achievement = scr_size*0.0001
+        hi_achievementx = scr_size*0.3
+        hi_achievementx2 = scr_size*0.35
+        hi_achievementy = scr_size*0.16
+        hi_achievementy_seq = scr_size*0.043
+        selectitemposx = scr_size*0.2
+        selectitemposy = scr_size*0.5
         button1pos_1 = round(scr_size*0.08)
         button2pos_1 = round(scr_size*0.44)
         button3pos_1 = round(scr_size*0.82)
@@ -145,7 +151,6 @@ def main(scr, level, id):
                     hiScores[i][2] = "delete"
         hiScores = [x for x in hiScores if x[2] != "delete"]
         hiScores = sorted(hiScores, key=lambda h: h[1], reverse=True)
-        print(hiScores)
         return hiScores
 
     def get_hiscores(highScoreTexts, highScorePos) :
@@ -167,7 +172,52 @@ def main(scr, level, id):
             topleft=highScorePos[x].bottomleft) for x in range(-3, 0)])
         showHiScores = True
 
-        return highScoreTexts, highScorePos, showHiScores
+        req = grequests.get(url + '/get_achievementlist/')
+        res = grequests.map([req])
+        achievement = res[0].content.decode()[1:-1].split(',')
+        achievement_set = []
+        for i in range(len(achievement)) :
+            if i % 3 == 0 : achievement_id = str(achievement[i][2:-1])
+            elif i % 3 == 1 : achievement_shoot = int(achievement[i][:])
+            elif i % 3 == 2 :
+                achievement_kill = int(achievement[i][:-1])
+                achievement_set.append([achievement_id, achievement_shoot, achievement_kill])
+
+        for score in hiScores :
+            for id in achievement_set :
+                if score[0] == id[0] :
+                    score.append(id[1])
+                    score.append(id[2])
+        print(hiScores)
+
+        hi_achievement_img = []
+        hi_achievement_rect = []
+        for i in range(len(hiScores)) :
+            for j in range(len(shoot_imgset)-1, -1, -1) :
+                if len(hiScores[i]) > 3 and hiScores[i][3] >= shoot_progress[j] :
+                    img, rec = load_image(shoot_imgset[j])
+                    img = pygame.transform.scale(img, (round(img.get_width()*size.hi_achievement), round(img.get_height()*size.hi_achievement)))
+                    rec = pygame.Rect(0, 0, img.get_width(), img.get_height())
+                    rec.centerx = size.hi_achievementx
+                    rec.centery = size.hi_achievementy + size.hi_achievementy_seq * i
+                    hi_achievement_img.append(img)
+                    hi_achievement_rect.append(rec)
+                    break
+
+        for i in range(len(hiScores)) :
+            for j in range(len(kill_imgset)-1, -1, -1) :
+                if len(hiScores[i]) > 3 and hiScores[i][4] >= kill_progress[j] :
+                    img, rec = load_image(kill_imgset[j])
+                    img = pygame.transform.scale(img, (round(img.get_width()*size.hi_achievement), round(img.get_height()*size.hi_achievement)))
+                    rec = pygame.Rect(0, 0, img.get_width(), img.get_height())
+                    rec.centerx = size.hi_achievementx2
+                    rec.centery = size.hi_achievementy + size.hi_achievementy_seq * i
+                    hi_achievement_img.append(img)
+                    hi_achievement_rect.append(rec)
+                    break
+        print(len(hi_achievement_rect))
+
+        return highScoreTexts, highScorePos, showHiScores, hi_achievement_img, hi_achievement_rect
 
     def background_update(screen, background, backgroundLoc) :
         screen.blit(
@@ -213,6 +263,14 @@ def main(scr, level, id):
                     font2.render("점수: " + str(score), 1, WHITE),
                     font2.render("폭탄: " + str(bombsHeld), 1, WHITE),
                     font2.render("코인: "+ str(coinsHeld), 1, WHITE)]
+
+    def get_achieve_record(id) :
+        data = {"id": id, "shoot": 0, "kill": 0}
+        req = grequests.post(url + '/get_achievement/', json=data)
+        res = grequests.map([req])
+        _ , shoot_record, kill_record = res[0].content.decode()[1:-1].split(',')
+
+        return shoot_record, kill_record
 
     shoot_progress = [10, 100, 1000]
     kill_progress = [10, 100, 1000]
@@ -370,8 +428,8 @@ def main(scr, level, id):
                     font2.render('로그인', 1, WHITE),
                     font2.render('최고 점수', 1, WHITE),
                     font2.render('계정 생성', 1, WHITE),
-                    font2.render('효과음 ', 1, WHITE),
-                    font2.render('켜짐', 1, RED),
+                    font2.render('효과음        ', 1, WHITE),
+                    font2.render('켜짐      ', 1, RED),
                     font2.render('꺼짐', 1, RED),
                     font2.render('음악', 1, WHITE),
                     font2.render('업적', 1, WHITE),
@@ -386,6 +444,7 @@ def main(scr, level, id):
                     font2.render("처치", 1, WHITE), font.render("0", 1, WHITE)]]
 
     startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts = set_language(language)
+    ### 언어 설정 끝
 
     startPos = startText.get_rect(midtop=titleRect.inflate(0, size.topendpos).midbottom)
     loginPos = loginText.get_rect(topleft=startPos.bottomleft)
@@ -419,8 +478,6 @@ def main(scr, level, id):
                     topright=screen.get_rect().inflate(-size.toppos, -size.toppos).topright)]
     for i in range(4) :
         achievePos.append(achieveTexts[i].get_rect(topleft=achievePos[i].bottomleft))
-
-    ### 언어 설정 끝
 
     # Coin shop 준비
     next,nextRect = load_image('next.png',WHITE)
@@ -604,7 +661,7 @@ def main(scr, level, id):
                         topleft=highScorePos[x].bottomleft) for x in range(-3, 0)])
                     showHiScores = True
                 elif selection == 2 and id != '' :
-                    highScoreTexts, highScorePos, showHiScores = get_hiscores(highScoreTexts, highScorePos)
+                    highScoreTexts, highScorePos, showHiScores, hi_achievement_img, hi_achievement_rect = get_hiscores(highScoreTexts, highScorePos)
                 elif (selection == 5 and id == '') or (selection == 3 and id != ''):
                     soundFX = not soundFX
                     if soundFX:
@@ -618,13 +675,8 @@ def main(scr, level, id):
                         pygame.mixer.music.stop()
                     Database.setSound(int(music), music=True)
                 elif (selection == 5 and id != '') and pygame.mixer:
-                    data = {"id": id, "shoot": 0, "kill": 0}
-                    req = grequests.post(url + '/get_achievement/', json=data)
-                    res = grequests.map([req])
-                    _ , shoot_record, kill_record = res[0].content.decode()[1:-1].split(',')
-                    
+                    shoot_record, kill_record = get_achieve_record(id)
                     achieveTexts = set_achievetext(shoot_record, kill_record, achieveTexts)
-
                     showAchievement = True
                 elif (selection == 7 and id == '') or (selection == 6 and id != ''):
                      pygame.quit()
@@ -668,6 +720,10 @@ def main(scr, level, id):
 
         if showHiScores:
             textOverlays = zip(highScoreTexts, highScorePos)
+            for i in range(len(hi_achievement_img)) :
+                print('a')
+                print(len(hi_achievement_img))
+                screen.blit(hi_achievement_img[i], hi_achievement_rect[i])
         elif showAchievement:
             screen = achievement_blit(screen, shoot_record, kill_record)
                 
@@ -790,7 +846,7 @@ def main(scr, level, id):
                                 inPmenu = False
                                 break
                             elif selection == 2 and id == '' :
-                                highScoreTexts, highScorePos, showHiScores = get_hiscores(highScoreTexts, highScorePos)
+                                highScoreTexts, highScorePos, showHiScores, hi_achievement_img, hi_achievement_rect = get_hiscores(highScoreTexts, highScorePos)
                             elif selection == 3:
                                 soundFX = not soundFX
                                 if soundFX:
@@ -828,9 +884,15 @@ def main(scr, level, id):
 
                     if showHiScores:
                         textOverlays = zip(highScoreTexts, highScorePos)
-                    elif showAchievement:
-                        screen = achievement_blit(screen, shoot_record, kill_record)
+                        for i in range(len(hi_achievement_img)) :
+                            print('a')
+                            print(len(hi_achievement_img))
+                            screen.blit(hi_achievement_img[i], hi_achievement_rect[i])
 
+                    elif showAchievement:
+                        shoot_record, kill_record = get_achieve_record(id)
+                        achieveTexts = set_achievetext(shoot_record, kill_record, achieveTexts)
+                        screen = achievement_blit(screen, shoot_record, kill_record)
                         textOverlays = zip(achieveTexts, achievePos)
                     elif id == '':
                         textOverlays = zip([restartText, hiScoreText, fxText,
@@ -860,6 +922,7 @@ def main(scr, level, id):
                 inCoin = True
                 ItemDict = {1: continuePos, 2: bombItemPos, 3: shieldPos, 4: doublePos}
                 shield_limit = 0
+                double_limit = 0
                 selectItemPos = pygame.Rect(0,0,selectItem.get_width(), selectItem.get_height())
                 selectItemPos.centerx = size.selectitemposx
                 selectItemPos.centery = size.selectitemposy
@@ -883,23 +946,24 @@ def main(scr, level, id):
                                 break
                             elif selection == 2:    
                                 if coinsHeld > 0:
-                                    bombsHeld +=1
-                                    coinsHeld -=1
+                                    bombsHeld += 1
+                                    coinsHeld -= 1
                                 else:
                                     continue
                             elif selection == 3:
-                                if (coinsHeld>0 and shield_limit==0) :
+                                if (coinsHeld > 0 and shield_limit == 0) :
                                     ship.shieldUp = True
                                     shield_on = True
-                                    coinsHeld -=1
-                                    shield_limit +=1
+                                    coinsHeld -= 1
+                                    shield_limit += 1
                                 else:
                                     continue
                             elif selection == 4 :
-                                if coinsHeld > 0 :
-                                    coinsHeld -=1
+                                if (coinsHeld > 0 and double_limit == 0) :
+                                    coinsHeld -= 1
                                     doublemissile = True
                                     double_on = True
+                                    double_limit += 1
                                 else:
                                     continue
                         elif (event.type == pygame.KEYDOWN
@@ -1049,7 +1113,7 @@ def main(scr, level, id):
                 if wave % 4 == 0:
                     speedUpText = font.render('SPEED UP!', 1, RED)
                     speedUpPos = speedUpText.get_rect(
-                        midtop=nextWaveNumPos.midbottom)
+                        midtop=shopPos.midbottom)
                     text.append(speedUpText)
                     textposition.append(speedUpPos)
             elif betweenWaveCount == 0:
@@ -1076,6 +1140,10 @@ def main(scr, level, id):
                 selectPos = selectText.get_rect(topright=menuDict[selection].topleft)
                 if showHiScores:
                     textOverlays = zip(highScoreTexts, highScorePos)
+                    for i in range(len(hi_achievement_img)) :
+                        print('a')
+                        print(len(hi_achievement_img))
+                        screen.blit(hi_achievement_img[i], hi_achievement_rect[i])
                 elif showAchievement:
                     screen = achievement_blit(screen, shoot_record, kill_record)
 
@@ -1169,12 +1237,11 @@ def main(scr, level, id):
                         req = grequests.post(url + '/login/', json=data)
                         res = grequests.map([req])
                         if req.response == None : return scr_size, level_size, ''
-                        print(res[0].content)
-                        if res[0].content == b'"Login Successed"' :
-                            print('login succeed')
+                        if res[0].content == b'"Login Success"' :
+                            print('login success')
                             return scr_size, level_size, id
                         else :
-                            print('login failed')
+                            print('login fail')
                             return scr_size, level_size, ''
 
         elif showCreateaccount == True :

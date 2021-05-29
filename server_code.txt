@@ -101,6 +101,10 @@ async def get_achievement(achievement: Achievement):
             return achievement_list[i]
     return "Not found"
 
+@app.get("/get_get_achievementlist/")
+async def get_achievementlist():
+    return achievement_list
+
 
 # ================================================================================
 # Dockerfile_fastapi (./)
