@@ -58,10 +58,11 @@ class Keyboard(object):
             pygame.K_u: 'U', pygame.K_v: 'V', pygame.K_w: 'W', pygame.K_x: 'X',
             pygame.K_y: 'Y', pygame.K_z: 'Z'}
 
-def main(scr, level, id):
+def main(scr, level, id, language):
     scr_size, level_size = scr, level
     user_size = round(scr_size / level_size)
     id = id
+    language = language
     mode1_lvl_size = 1
     mode2_lvl_size = 1.6
 
@@ -153,6 +154,7 @@ def main(scr, level, id):
         hiScores = sorted(hiScores, key=lambda h: h[1], reverse=True)
         return hiScores
 
+
     def get_hiscores(highScoreTexts, highScorePos) :
         req = grequests.get(url + '/get_record/')
         res = grequests.map([req])
@@ -165,7 +167,10 @@ def main(scr, level, id):
                 score_accuracy = round(float(Scores[i][:-1])*100, 2)
                 hiScores.append([score_id, score_score, str(score_accuracy)+"%"])
         hiScores = remove_id_overlap(hiScores)
-        highScoreTexts = [font.render("NAME", 1, RED), font.render("SCORE", 1, RED), font.render("ACCURACY", 1, RED)]
+        if language == 'ENG' :
+            highScoreTexts = [font.render("NAME", 1, RED), font.render("SCORE", 1, RED), font.render("ACCURACY", 1, RED)]
+        else :
+            highScoreTexts = [font2.render("이름", 1, RED), font2.render("점수", 1, RED), font2.render("정확도", 1, RED)]
         for hs in hiScores:
             highScoreTexts.extend([font.render(str(hs[x]), 1, WHITE) for x in range(3)])
             highScorePos.extend([highScoreTexts[x].get_rect(
@@ -215,7 +220,6 @@ def main(scr, level, id):
                     hi_achievement_img.append(img)
                     hi_achievement_rect.append(rec)
                     break
-        print(len(hi_achievement_rect))
 
         return highScoreTexts, highScorePos, showHiScores, hi_achievement_img, hi_achievement_rect
 
@@ -346,13 +350,13 @@ def main(scr, level, id):
     aliennum = 20 # 아이템 나오는 alien 숫자(aliennum 이상 남은 경우)
     setaliennum = 10 # 4웨이브마다 초기 웨이브 수
     speedup = 0.5 # 4웨이브마다 speed += speedup
-    aliennumup = 2 # 4웨이브 주기로 alienthiswave = int(alienthiswave * aliennumup)
+    aliennumup = 1 # 4웨이브 주기로 alienthiswave = int(alienthiswave * aliennumup)
 
     alienPeriod = clockTime // 2
     curTime = 0
     aliensThisWave, aliensLeftThisWave, Alien.numOffScreen = 10, 10, 10
     wave = 1
-    bombsHeld = 3
+    bombsHeld = 1000
     coinsHeld = 0 # coin 구현
     doublemissile = False #doublemissile아이템이 지속되는 동안(5초) 미사일이 두배로 발사됨
     Itemdouble = False
@@ -369,14 +373,6 @@ def main(scr, level, id):
     font = pygame.font.Font(None, size.font_eng)
     font2 = pygame.font.SysFont('hy견고딕', size.font_kor)
     inMenu = True
-    if id != '' :
-        data = {"id": id, "language": ''}
-        req = grequests.post(url + '/get_language/', json=data)
-        res = grequests.map([req])
-        if req.response == None : return scr_size, level_size, ''
-        language = str(res[0].content.decode()[1:-1])
-    else :
-        language = "ENG"
 
     hiScores = Database.getScores()
     highScoreTexts = [font.render("NAME", 1, RED),
@@ -422,7 +418,10 @@ def main(scr, level, id):
                     font.render('LOGOUT', 1, WHITE),
                     [font.render("ACHIEVEMENT NAME", 1, RED), font.render("Progress", 1, RED),
                     font.render("shoot", 1, WHITE), font.render("0", 1, WHITE),
-                    font.render("kill", 1, WHITE), font.render("0", 1, WHITE)]]
+                    font.render("kill", 1, WHITE), font.render("0", 1, WHITE)],
+                    font.render('ID', 1, RED),
+                    font.render('PASSWORD', 1, RED),
+                    font.render('GAME OVER', 1, WHITE)]
 
     text_kor_set = [font2.render('게임 시작', 1, WHITE),
                     font2.render('로그인', 1, WHITE),
@@ -441,10 +440,15 @@ def main(scr, level, id):
                     font2.render('로그아웃', 1, WHITE),
                     [font2.render("업적 이름", 1, RED), font2.render("진행률", 1, RED),
                     font2.render("미사일", 1, WHITE), font.render("0", 1, WHITE),
-                    font2.render("처치", 1, WHITE), font.render("0", 1, WHITE)]]
+                    font2.render("처치", 1, WHITE), font.render("0", 1, WHITE)],
+                    font2.render('아이디', 1, RED),
+                    font2.render('비밀번호', 1, RED),
+                    font2.render('게임 종료', 1, WHITE)]
 
-    startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts = set_language(language)
+    startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts, idText, pwText, gameOverText = set_language(language)
     ### 언어 설정 끝
+    
+    gameOverPos = gameOverText.get_rect(center=screen.get_rect().center)
 
     startPos = startText.get_rect(midtop=titleRect.inflate(0, size.topendpos).midbottom)
     loginPos = loginText.get_rect(topleft=startPos.bottomleft)
@@ -611,7 +615,7 @@ def main(scr, level, id):
     while inMenu:
         scr_x , scr_y = pygame.display.get_surface().get_size()
         if scr_size != scr_x or scr_size != scr_y :
-            return min(scr_x, scr_y), level_size, id    # 메뉴화면에서만 창 사이즈 크기 확인하고, 변경되면 main 재시작
+            return min(scr_x, scr_y), level_size, id, language    # 메뉴화면에서만 창 사이즈 크기 확인하고, 변경되면 main 재시작
         clock.tick(clockTime)
 
         screen, background, backgroundLoc = background_update(screen, background, backgroundLoc)
@@ -654,7 +658,10 @@ def main(scr, level, id):
                         
                     # 중복 아이디 제거
                     hiScores_local = remove_id_overlap(hiScores_local)
-                    highScoreTexts = [font.render("NAME", 1, RED), font.render("SCORE", 1, RED), font.render("ACCURACY", 1, RED)]
+                    if language == 'ENG' :
+                        highScoreTexts = [font.render("NAME", 1, RED), font.render("SCORE", 1, RED), font.render("ACCURACY", 1, RED)]
+                    else :
+                        highScoreTexts = [font2.render("이름", 1, RED), font2.render("점수", 1, RED), font2.render("정확도", 1, RED)]
                     for hs in hiScores_local:
                         highScoreTexts.extend([font.render(str(hs[x]), 1, WHITE) for x in range(3)])
                         highScorePos.extend([highScoreTexts[x].get_rect(
@@ -688,7 +695,7 @@ def main(scr, level, id):
                     data = {"id": id, "language": "KOR"}
                     req = grequests.post(url + '/record_language/', json=data)
                     res = grequests.map([req])
-                    if req.response == None : return scr_size, level_size, ''
+                    if req.response == None : return scr_size, level_size, '', language
                     print(res[0].content)
                 elif selection == 8 and id == '' and language == "KOR":
                     language = "ENG"
@@ -698,10 +705,10 @@ def main(scr, level, id):
                     data = {"id": id, "language": "ENG"}
                     req = grequests.post(url + '/record_language/', json=data)
                     res = grequests.map([req])
-                    if req.response == None : return scr_size, level_size, ''
+                    if req.response == None : return scr_size, level_size, '', language
                     print(res[0].content)
                 elif selection == 8 and id != '' :
-                    return scr_size, level_size, ''
+                    return scr_size, level_size, '', language
 
             elif (event.type == pygame.KEYDOWN
                   and event.key == pygame.K_UP
@@ -720,10 +727,9 @@ def main(scr, level, id):
 
         if showHiScores:
             textOverlays = zip(highScoreTexts, highScorePos)
-            for i in range(len(hi_achievement_img)) :
-                print('a')
-                print(len(hi_achievement_img))
-                screen.blit(hi_achievement_img[i], hi_achievement_rect[i])
+            if id != '' :
+                for i in range(len(hi_achievement_img)) :
+                    screen.blit(hi_achievement_img[i], hi_achievement_rect[i])
         elif showAchievement:
             screen = achievement_blit(screen, shoot_record, kill_record)
                 
@@ -751,7 +757,7 @@ def main(scr, level, id):
             screen.blit(title, titleRect)
 
         #Text Update
-        startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts = set_language(language)
+        startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts, idText, pwText, gameOverText = set_language(language)
 
         for txt, pos in textOverlays:
             screen.blit(txt, pos)
@@ -762,9 +768,9 @@ def main(scr, level, id):
         quitButton = Button(screen,quitImg,size.button3pos_1,size.buttonpos_2,size.buttonpos_3,size.buttonpos_4,clickQuitImg,size.button3pos_1_ad,size.button_ad,'quitgame')
 
         if modeButton_one.lvl_size == -1 :
-            return scr_size, mode1_lvl_size, id
+            return scr_size, mode1_lvl_size, id, language
         if modeButton_two.lvl_size == -2 :
-            return scr_size, mode2_lvl_size, id
+            return scr_size, mode2_lvl_size, id, language
 
         pygame.display.flip()
         #여기까지 버튼 구현size.button_ad
@@ -845,8 +851,10 @@ def main(scr, level, id):
                             elif selection == 1:
                                 inPmenu = False
                                 break
-                            elif selection == 2 and id == '' :
+                            elif selection == 2 and id != '' :
                                 highScoreTexts, highScorePos, showHiScores, hi_achievement_img, hi_achievement_rect = get_hiscores(highScoreTexts, highScorePos)
+                            elif selection == 2 and id == '' :
+                                showHiScores = True
                             elif selection == 3:
                                 soundFX = not soundFX
                                 if soundFX:
@@ -882,12 +890,11 @@ def main(scr, level, id):
 
                     selectPos = selectText.get_rect(topright=menuDict[selection].topleft)
 
-                    if showHiScores:
+                    if showHiScores :
                         textOverlays = zip(highScoreTexts, highScorePos)
-                        for i in range(len(hi_achievement_img)) :
-                            print('a')
-                            print(len(hi_achievement_img))
-                            screen.blit(hi_achievement_img[i], hi_achievement_rect[i])
+                        if id != '' :
+                            for i in range(len(hi_achievement_img)) :
+                                screen.blit(hi_achievement_img[i], hi_achievement_rect[i])
 
                     elif showAchievement:
                         shoot_record, kill_record = get_achieve_record(id)
@@ -1098,11 +1105,16 @@ def main(scr, level, id):
         if aliensLeftThisWave <= 0:  
             if betweenWaveCount > 0:
                 betweenWaveCount -= 1
-                nextWaveText = font.render(
-                    'Wave ' + str(wave + 1) + ' in', 1, WHITE)
+                if language == 'ENG' :
+                    nextWaveText = font.render('Wave ' + str(wave + 1) + ' in', 1, WHITE)
+                else :
+                    nextWaveText = font2.render(str(wave + 1) + ' 웨이브 남은 시간', 1, WHITE)
                 nextWaveNum = font.render(
                     str((betweenWaveCount // clockTime) + 1), 1, WHITE)
-                shopText = font.render('Item Shop : Press I',1,WHITE)
+                if language == 'ENG' :
+                    shopText = font.render('Item Shop : Press I',1,WHITE)
+                else :
+                    shopText = font2.render('아이템 상점 : I를 누르세요',1,WHITE)
                 text.extend([nextWaveText, nextWaveNum,shopText])
                 nextWavePos = nextWaveText.get_rect(
                     center=screen.get_rect().center)
@@ -1141,8 +1153,6 @@ def main(scr, level, id):
                 if showHiScores:
                     textOverlays = zip(highScoreTexts, highScorePos)
                     for i in range(len(hi_achievement_img)) :
-                        print('a')
-                        print(len(hi_achievement_img))
                         screen.blit(hi_achievement_img[i], hi_achievement_rect[i])
                 elif showAchievement:
                     screen = achievement_blit(screen, shoot_record, kill_record)
@@ -1236,13 +1246,18 @@ def main(scr, level, id):
                         data = {"id": id, "password": password}
                         req = grequests.post(url + '/login/', json=data)
                         res = grequests.map([req])
-                        if req.response == None : return scr_size, level_size, ''
+                        if req.response == None : return scr_size, level_size, '', language
                         if res[0].content == b'"Login Success"' :
+                            data = {"id": id, "language": ''}
+                            req = grequests.post(url + '/get_language/', json=data)
+                            res = grequests.map([req])
+                            if req.response == None : return scr_size, level_size, '', language
+                            language = str(res[0].content.decode()[1:-1])
                             print('login success')
-                            return scr_size, level_size, id
+                            return scr_size, level_size, id, language
                         else :
                             print('login fail')
-                            return scr_size, level_size, ''
+                            return scr_size, level_size, '', language
 
         elif showCreateaccount == True :
             for event in pygame.event.get():
@@ -1292,14 +1307,14 @@ def main(scr, level, id):
                         data = {"id": id, "password": password}
                         req = grequests.post(url + "/create_account/", json=data)
                         res = grequests.map([req])
-                        if req.response == None : return scr_size, level_size, ''
+                        if req.response == None : return scr_size, level_size, '', language
                         print(res[0].content)
                         if res[0].content == b'"Account created"' :
                             print('Account created')
-                            return scr_size, level_size, ''
+                            return scr_size, level_size, '', language
                         else :
                             print('Exist same ID')
-                            return scr_size, level_size, ''
+                            return scr_size, level_size, '', language
 
 
         # hiscore event handling
@@ -1314,7 +1329,7 @@ def main(scr, level, id):
                 elif (event.type == pygame.KEYDOWN
                     and event.key == pygame.K_RETURN
                     and not isHiScore):
-                    return scr_size, level_size
+                    return scr_size, level_size, id, language
                 elif (event.type == pygame.KEYDOWN
                     and event.key in Keyboard.keys.keys()
                     and len(nameBuffer) < id_len):
@@ -1329,26 +1344,29 @@ def main(scr, level, id):
                     and event.key == pygame.K_RETURN
                     and len(name) > 0):
                     Database.setScore(hiScores, (name, score, accuracy))
-                    return scr_size, level_size, id
+                    return scr_size, level_size, id, language
 
         else : # 로그인 상태 기록 저장(화면을 만들어야 함)
             data = {"id": id, "score": score, "accuracy": accuracy}
             req = grequests.post(url + '/save_record/', json=data)
             res = grequests.map([req])
-            if req.response == None : return scr_size, level_size, ''
+            if req.response == None : return scr_size, level_size, '', language
             print(res[0].content)
             data = {"id": id, "shoot": shoot_count, "kill": kill_count}
             req = grequests.post(url + '/record_achievement/', json=data)
             res = grequests.map([req])
-            if req.response == None : return scr_size, level_size, ''
+            if req.response == None : return scr_size, level_size, '', language
             print(res[0].content)
-            return scr_size, level_size, id
+            return scr_size, level_size, id, language
 
         if isHiScore: # 로그인 상태일 때, 수정 필요
             hiScorePos = hiScoreText.get_rect(midbottom=screen.get_rect().center)
             scoreText = font.render(str(score), 1, WHITE)
             scorePos = scoreText.get_rect(midtop=hiScorePos.midbottom)
-            enterNameText = font.render('ENTER YOUR NAME:', 1, RED)
+            if language == 'ENG' :
+                enterNameText = font.render('ENTER YOUR NAME:', 1, RED)
+            else :
+                enterNameText = font2.render('이름을 입력하세요:', 1, RED)
             enterNamePos = enterNameText.get_rect(midtop=scorePos.midbottom)
             nameText = font.render(name, 1, WHITE)
             namePos = nameText.get_rect(midtop=enterNamePos.midbottom)
@@ -1358,12 +1376,9 @@ def main(scr, level, id):
                                enterNamePos, namePos])
 
         elif showLogin or showCreateaccount:
-            idText = font.render('ID', 1, RED)
-            idPos = idText.get_rect(
-                midbottom=screen.get_rect().center)
+            idPos = idText.get_rect(midbottom=screen.get_rect().center)
             inputidText = font.render(id, 1, WHITE)
             inputidPos = inputidText.get_rect(midtop=idPos.midbottom)
-            pwText = font.render('PASSWORD', 1, RED)
             pwPos = pwText.get_rect(midtop=inputidPos.midbottom)
             inputpwText = font.render(password, 1, WHITE)
             inputpwPos = inputpwText.get_rect(midtop=pwPos.midbottom)
@@ -1373,10 +1388,10 @@ def main(scr, level, id):
                                pwPos, inputpwPos])
 
         elif id == '':
-            gameOverText = font.render('GAME OVER', 1, WHITE)
-            gameOverPos = gameOverText.get_rect(
-                center=screen.get_rect().center)
-            scoreText = font.render('SCORE: {}'.format(score), 1, WHITE)
+            if language == 'ENG' :
+                scoreText = font.render('SCORE: {}'.format(score), 1, WHITE)
+            else :
+                scoreText = font2.render('점수: {}'.format(score), 1, WHITE)
             scorePos = scoreText.get_rect(midtop=gameOverPos.midbottom)
             textOverlay = zip([gameOverText, scoreText],
                               [gameOverPos, scorePos])
