@@ -1,3 +1,4 @@
+from os import kill
 import pygame
 import random
 from collections import deque
@@ -23,7 +24,7 @@ BLACK= (0, 0, 0)
 WHITE= (255, 255, 255)
 GREEN= (0, 255, 0)
 
-url = "http://15.164.204.93"
+url = "http://osspcshooting.shop"
 
 class Button:
     def __init__(self, gameDisplay,img_in, x, y, width, height, img_act, x_act, y_act, action = None):
@@ -60,43 +61,193 @@ class Keyboard(object):
 
 def main(scr, level, id):
     scr_size, level_size = scr, level
-    user_size = round(scr_size * level_size)
+    user_size = round(scr_size / level_size)
     id = id
+    mode1_lvl_size = 1
+    mode2_lvl_size = 1.6
 
-    url = "http://15.164.204.93"
+    class size :
+        speed = scr_size*0.004
+        background = scr_size*4
+        backgroundLoc = scr_size*3
+        star_seq = round(scr_size*0.06)
+        star_s = round(scr_size*0.004)
+        star_l = round(scr_size*0.01)
+        font_eng = round(scr_size*0.065)
+        font_kor =  round(scr_size*0.045)
+        toppos = scr_size*0.2
+        coinnextx = scr_size*0.005
+        coinnexty = scr_size*0.004
+        ratio = scr_size*0.002
+        middletoppos = scr_size*0.35
+        topendpos = scr_size*0.15
+        middlepos = scr_size*0.5
+        cointoppos = scr_size*0.25
+        coinpos = scr_size*0.7
+        coinxonepos = scr_size*0.2
+        coinxtwopos = scr_size*0.4
+        coinxthreepos = scr_size*0.6
+        coinxfourpos = scr_size*0.8
+        coinypose = scr_size*0.8
+        achievement = scr_size/3000
+        achievementpos = scr_size*0.25
+        button1pos_1 = round(scr_size*0.08)
+        button2pos_1 = round(scr_size*0.44)
+        button3pos_1 = round(scr_size*0.82)
+        buttonpos_2 = round(scr_size*0.9)
+        buttonpos_3 = round(scr_size*0.08)
+        buttonpos_4 = round(scr_size*0.04)
+        button1pos_1_ad = round(scr_size*0.07)
+        button2pos_1_ad = round(scr_size*0.43)
+        button3pos_1_ad = round(scr_size*0.81)
+        button_ad = round(scr_size*0.896)
+        lifex = scr_size * 0.84
+        lifey = scr_size * 0.02
+
+    def achievement_posx(i) :
+        return 1 + i%3
+    def achievement_posy(i) :
+        return 2 + (i+1)//3
+    
+    def kill_alien(alien, aliensLeftThisWave, kill_count, score) :
+        aliensLeftThisWave -= 1
+        kill_count += 1
+        #score differentiation by Alien color
+        #wave1 aliens
+        if alien.pType == 'green' or alien.pType == 'orange':
+            score += 1
+        #wave2 alien
+        elif alien.pType == 'white':
+            score += 2
+        #wave3 alien
+        elif alien.pType == 'red':
+            score += 4
+        #wave4 alien
+        elif alien.pType == 'yellow':
+            score += 8
+        return aliensLeftThisWave, kill_count, score
+    
+    def achievement_blit(screen, shoot_record, kill_record) :
+        for i in range(len(shoot_imgset)) :
+            if int(shoot_record) >= shoot_progress[i] :
+                screen.blit(shoot_img[i], shoot_rect[i])
+            if int(kill_record) >= kill_progress[i] :
+                screen.blit(kill_img[i], kill_rect[i])
+        return screen
+
+    def remove_id_overlap(hiScores) :
+        # 중복 아이디 제거
+        hiScores = sorted(hiScores, key=lambda h: h[1])
+        for i in range(len(hiScores)-1):
+            score_id = hiScores[i][0]
+            for j in range(i+1, len(hiScores)):
+                if score_id == hiScores[j][0]:
+                    hiScores[i][2] = "delete"
+        hiScores = [x for x in hiScores if x[2] != "delete"]
+        hiScores = sorted(hiScores, key=lambda h: h[1], reverse=True)
+        print(hiScores)
+        return hiScores
+
+    def get_hiscores(highScoreTexts, highScorePos) :
+        req = grequests.get(url + '/get_record/')
+        res = grequests.map([req])
+        Scores = res[0].content.decode()[1:-1].split(',')
+        hiScores = []
+        for i in range(len(Scores)) :
+            if i % 3 == 0 : score_id = Scores[i][2:-1]
+            elif i % 3 == 1 : score_score = int(Scores[i][:])
+            elif i % 3 == 2:
+                score_accuracy = round(float(Scores[i][:-1])*100, 2)
+                hiScores.append([score_id, score_score, str(score_accuracy)+"%"])
+        hiScores = remove_id_overlap(hiScores)
+        highScoreTexts = [font.render("NAME", 1, RED), font.render("SCORE", 1, RED), font.render("ACCURACY", 1, RED)]
+        for hs in hiScores:
+            highScoreTexts.extend([font.render(str(hs[x]), 1, WHITE) for x in range(3)])
+            highScorePos.extend([highScoreTexts[x].get_rect(
+            topleft=highScorePos[x].bottomleft) for x in range(-3, 0)])
+        showHiScores = True
+
+        return highScoreTexts, highScorePos, showHiScores
+
+    def background_update(screen, background, backgroundLoc) :
+        screen.blit(
+            background, (0, 0), area=pygame.Rect(
+                0, backgroundLoc, scr_size, scr_size))
+        backgroundLoc -= speed
+        if backgroundLoc - speed <= speed:
+            backgroundLoc = size.backgroundLoc
+        return screen, background, backgroundLoc
+
+    def set_language(lan) :
+        # 언어 설정
+        if language == "ENG": #기본 설정 영어
+            return text_eng_set
+        else :
+            return text_kor_set
+
+    def set_achievetext(shoot_record, kill_record, achieveTexts) :
+        
+        for i in range(len(shoot_progress)) :
+            if int(shoot_record) < shoot_progress[i] :
+                achieveTexts[3] = font.render(shoot_record + " / " + str(shoot_progress[i]), 1, WHITE)
+                break
+
+        for i in range(len(kill_progress)) :
+            if int(kill_record) < kill_progress[i] :
+                achieveTexts[5] = font.render(kill_record + " / " + str(kill_progress[i]), 1, WHITE)
+                break
+
+        return achieveTexts
+
+    def ingame_text_update(language) :
+        if language == "ENG" :
+            return [font.render("Wave: " + str(wave), 1, WHITE), 
+                    font.render("Aliens Left: " + str(aliensLeftThisWave), 1, WHITE),
+                    font.render("Score: " + str(score), 1, WHITE),
+                    font.render("Bombs: " + str(bombsHeld), 1, WHITE),
+                    font.render("Coins: "+ str(coinsHeld), 1, WHITE)]
+
+        else :
+            return [font2.render("웨이브: " + str(wave), 1, WHITE), 
+                    font2.render("적 남은 수: " + str(aliensLeftThisWave), 1, WHITE),
+                    font2.render("점수: " + str(score), 1, WHITE),
+                    font2.render("폭탄: " + str(bombsHeld), 1, WHITE),
+                    font2.render("코인: "+ str(coinsHeld), 1, WHITE)]
 
     shoot_progress = [10, 100, 1000]
     kill_progress = [10, 100, 1000]
+    id_len = 8
+    pw_len = 3
 
-    direction = {None: (0, 0), pygame.K_UP: (0, -scr_size*0.004), pygame.K_DOWN: (0, scr_size*0.004),
-             pygame.K_LEFT: (-scr_size*0.004, 0), pygame.K_RIGHT: (scr_size*0.004, 0)}
+    direction = {None: (0, 0), pygame.K_UP: (0, -size.speed), pygame.K_DOWN: (0, size.speed),
+             pygame.K_LEFT: (-size.speed, 0), pygame.K_RIGHT: (size.speed, 0)}
 
     # Initialize everything
     pygame.mixer.pre_init(11025, -16, 2, 512)
     pygame.init()
     screen = pygame.display.set_mode((scr_size, scr_size), pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.RESIZABLE)
     pygame.display.set_caption('Shooting Game')
-    pygame.mouse.set_visible(1)
+    pygame.mouse.set_visible(True)
 
 # Create the background which will scroll and loop over a set of different
 # size stars
-    background = pygame.Surface((scr_size, scr_size*4))
+    background = pygame.Surface((scr_size, size.background))
     background = background.convert()
-    background.fill((0, 0, 0))
+    background.fill(BLACK)
 
-    backgroundLoc = scr_size*3
+    backgroundLoc = size.backgroundLoc
     finalStars = deque()
-    for y in range(0, scr_size*3, round(scr_size*0.06)):
-        size = random.randint(round(scr_size*0.004), round(scr_size*0.01))
-        x = random.randint(0, scr_size - size)
+    for y in range(0, size.backgroundLoc, size.star_seq):
+        starsize = random.randint(size.star_s, size.star_l)
+        x = random.randint(0, scr_size - starsize)
         if y <= scr_size:
-            finalStars.appendleft((x, y + scr_size*3, size))
+            finalStars.appendleft((x, y + size.backgroundLoc, starsize))
         pygame.draw.rect(
-            background, (255, 0, 0), pygame.Rect(x, y, size, size))
+            background, RED, pygame.Rect(x, y, starsize, starsize))
     while finalStars:
-        x, y, size = finalStars.pop()
+        x, y, starsize = finalStars.pop()
         pygame.draw.rect(
-            background, (255, 0, 0), pygame.Rect(x, y, size, size))
+            background, RED, pygame.Rect(x, y, starsize, starsize))
 
 # Display the background
     screen.blit(background, (0, 0))
@@ -134,6 +285,11 @@ def main(scr, level, id):
     ship_explode_sound = load_sound('ship_explode.ogg')
     load_music('music_loop.ogg')
 
+    aliennum = 20 # 아이템 나오는 alien 숫자(aliennum 이상 남은 경우)
+    setaliennum = 10 # 4웨이브마다 초기 웨이브 수
+    speedup = 0.5 # 4웨이브마다 speed += speedup
+    aliennumup = 2 # 4웨이브 주기로 alienthiswave = int(alienthiswave * aliennumup)
+
     alienPeriod = clockTime // 2
     curTime = 0
     aliensThisWave, aliensLeftThisWave, Alien.numOffScreen = 10, 10, 10
@@ -152,8 +308,8 @@ def main(scr, level, id):
     betweenDoubleCount = betweenDoubleTime
     coinTime = 8 * clockTime # coin 구현 
     coinTimeLeft = coinTime # coin 구현
-    font = pygame.font.Font(None, round(scr_size*0.065))
-    font2 = pygame.font.SysFont('hy견고딕', round(scr_size*0.045))
+    font = pygame.font.Font(None, size.font_eng)
+    font2 = pygame.font.SysFont('hy견고딕', size.font_kor)
     inMenu = True
     if id != '' :
         data = {"id": id, "language": ''}
@@ -169,70 +325,69 @@ def main(scr, level, id):
                       font.render("SCORE", 1, RED),
                       font.render("ACCURACY", 1, RED)]
     highScorePos = [highScoreTexts[0].get_rect(
-                      topleft=screen.get_rect().inflate(-scr_size*0.2, -scr_size*0.2).topleft),
+                      topleft=screen.get_rect().inflate(-size.toppos, -size.toppos).topleft),
                     highScoreTexts[1].get_rect(
-                      midtop=screen.get_rect().inflate(-scr_size*0.2, -scr_size*0.2).midtop),
+                      midtop=screen.get_rect().inflate(-size.toppos, -size.toppos).midtop),
                     highScoreTexts[2].get_rect(
-                      topright=screen.get_rect().inflate(-scr_size*0.2, -scr_size*0.2).topright)]
+                      topright=screen.get_rect().inflate(-size.toppos, -size.toppos).topright)]
     for hs in hiScores:
         highScoreTexts.extend([font.render(str(hs[x]), 1, WHITE)
                                for x in range(3)])
         highScorePos.extend([highScoreTexts[x].get_rect(
             topleft=highScorePos[x].bottomleft) for x in range(-3, 0)])
 
-    #database에 저장된 업적과 연동해야함, hiScoreTexts.extend ~ 라인 참고
-    achieveTexts = [font.render("ACHIEVEMENT NAME", 1, RED),
-                    font.render("Progress", 1, RED)]
-    achievePos = [achieveTexts[0].get_rect(
-                    topleft=screen.get_rect().inflate(-scr_size*0.2, -scr_size*0.2).topleft),
-                  achieveTexts[1].get_rect(
-                    topright=screen.get_rect().inflate(-scr_size*0.2, -scr_size*0.2).topright)]
     ########
 
     title, titleRect = load_image('title.png')
-    title = pygame.transform.scale(title, (round(title.get_width()*scr_size/500), round(title.get_height()*scr_size/500)))
+    title = pygame.transform.scale(title, (round(title.get_width()*size.ratio), round(title.get_height()*size.ratio)))
     titleRect = pygame.Rect(0, 0, title.get_width(), title.get_height())
     pause,pauseRect = load_image('pause.png',WHITE)
-    pause = pygame.transform.scale(pause, (round(pause.get_width()*scr_size/500), round(pause.get_height()*scr_size/500)))
+    pause = pygame.transform.scale(pause, (round(pause.get_width()*size.ratio), round(pause.get_height()*size.ratio)))
     pauseRect = pygame.Rect(0, 0, pause.get_width(), pause.get_height())
-    titleRect.midtop = screen.get_rect().inflate(0, -scr_size*0.35).midtop
-    pauseRect.midtop = screen.get_rect().inflate(0, -scr_size*0.35).midtop
-    # 언어 설정
-    if language == "ENG": #기본 설정 영어
-        startText = font.render('START GAME', 1, WHITE)
-        loginText = font.render('LOGIN', 1, WHITE)
-        hiScoreText = font.render('HIGH SCORES', 1, WHITE)
-        createaccountText = font.render('CREATE ACCOUNT', 1, WHITE)
-        fxText = font.render('SOUND FX ', 1, WHITE)
-        fxOnText = font.render('ON', 1, RED)
-        fxOffText = font.render('OFF', 1, RED)
-        musicText = font.render('MUSIC', 1, WHITE)
-        achievementText = font.render('ACHIEVEMENTS', 1, WHITE)
-        musicOnText = font.render('ON', 1, RED)
-        musicOffText = font.render('OFF', 1, RED)
-        quitText = font.render('QUIT', 1, WHITE)
-        restartText = font.render('RESTART', 1, WHITE)
-        languageText = font.render('LANGUAGE', 1, WHITE)
-        logoutText = font.render('LOGOUT', 1, WHITE)
+    titleRect.midtop = screen.get_rect().inflate(0, -size.middletoppos).midtop
+    pauseRect.midtop = screen.get_rect().inflate(0, -size.middletoppos).midtop
 
-    elif language == "KOR":
-        startText = font2.render('게임 시작', 1, WHITE)
-        loginText = font2.render('로그인', 1, WHITE)
-        hiScoreText = font2.render('최고 점수', 1, WHITE)
-        createaccountText = font2.render('계정 생성', 1, WHITE)
-        fxText = font2.render('효과음 ', 1, WHITE)
-        fxOnText = font2.render('켜짐', 1, RED)
-        fxOffText = font2.render('꺼짐', 1, RED)
-        musicText = font2.render('음악', 1, WHITE)
-        achievementText = font2.render('업적', 1, WHITE)
-        musicOnText = font2.render('켜짐', 1, RED)
-        musicOffText = font2.render('꺼짐', 1, RED)
-        quitText = font2.render('종료', 1, WHITE)
-        restartText = font2.render('다시 시작', 1, WHITE)
-        languageText = font2.render('언어', 1, WHITE)
-        logoutText = font2.render('로그아웃', 1, WHITE)
+    text_eng_set = [font.render('START GAME', 1, WHITE),
+                    font.render('LOGIN', 1, WHITE),
+                    font.render('HIGH SCORES', 1, WHITE),
+                    font.render('CREATE ACCOUNT', 1, WHITE),
+                    font.render('SOUND FX ', 1, WHITE),
+                    font.render('ON', 1, RED),
+                    font.render('OFF', 1, RED),
+                    font.render('MUSIC', 1, WHITE),
+                    font.render('ACHIEVEMENTS', 1, WHITE),
+                    font.render('ON', 1, RED),
+                    font.render('OFF', 1, RED),
+                    font.render('QUIT', 1, WHITE),
+                    font.render('RESTART', 1, WHITE),
+                    font.render('LANGUAGE', 1, WHITE),
+                    font.render('LOGOUT', 1, WHITE),
+                    [font.render("ACHIEVEMENT NAME", 1, RED), font.render("Progress", 1, RED),
+                    font.render("shoot", 1, WHITE), font.render("0", 1, WHITE),
+                    font.render("kill", 1, WHITE), font.render("0", 1, WHITE)]]
 
-    startPos = startText.get_rect(midtop=titleRect.inflate(0, scr_size*0.15).midbottom)
+    text_kor_set = [font2.render('게임 시작', 1, WHITE),
+                    font2.render('로그인', 1, WHITE),
+                    font2.render('최고 점수', 1, WHITE),
+                    font2.render('계정 생성', 1, WHITE),
+                    font2.render('효과음 ', 1, WHITE),
+                    font2.render('켜짐', 1, RED),
+                    font2.render('꺼짐', 1, RED),
+                    font2.render('음악', 1, WHITE),
+                    font2.render('업적', 1, WHITE),
+                    font2.render('켜짐', 1, RED),
+                    font2.render('꺼짐', 1, RED),
+                    font2.render('종료', 1, WHITE),
+                    font2.render('다시 시작', 1, WHITE),
+                    font2.render('언어', 1, WHITE),
+                    font2.render('로그아웃', 1, WHITE),
+                    [font2.render("업적 이름", 1, RED), font2.render("진행률", 1, RED),
+                    font2.render("미사일", 1, WHITE), font.render("0", 1, WHITE),
+                    font2.render("처치", 1, WHITE), font.render("0", 1, WHITE)]]
+
+    startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts = set_language(language)
+
+    startPos = startText.get_rect(midtop=titleRect.inflate(0, size.topendpos).midbottom)
     loginPos = loginText.get_rect(topleft=startPos.bottomleft)
     createaccountPos = createaccountText.get_rect(topleft=loginPos.bottomleft)
     if id == '' :
@@ -258,91 +413,111 @@ def main(scr, level, id):
     selectPos = selectText.get_rect(topright=startPos.topleft)
     restartPos = restartText.get_rect(bottomleft=hiScorePos.topleft)
     
+    achievePos = [achieveTexts[0].get_rect(
+                    topleft=screen.get_rect().inflate(-size.toppos, -size.toppos).topleft),
+                  achieveTexts[1].get_rect(
+                    topright=screen.get_rect().inflate(-size.toppos, -size.toppos).topright)]
+    for i in range(4) :
+        achievePos.append(achieveTexts[i].get_rect(topleft=achievePos[i].bottomleft))
+
     ### 언어 설정 끝
 
     # Coin shop 준비
     next,nextRect = load_image('next.png',WHITE)
-    next = pygame.transform.scale(next, (round(next.get_width()*scr_size/200), round(next.get_height()*scr_size/250)))
+    next = pygame.transform.scale(next, (round(next.get_width()*size.coinnextx), round(next.get_height()*size.coinnexty)))
     nextRect = pygame.Rect(0, 0, next.get_width(), next.get_height())
-    nextRect.centerx = scr_size*0.5
-    nextRect.centery = scr_size*0.25    
+    nextRect.centerx = size.middlepos
+    nextRect.centery = size.cointoppos  
     
     continue_img,continueRect = load_image('continue.png',WHITE)
-    continue_img = pygame.transform.scale(continue_img, (round(continue_img.get_width()*scr_size/500), round(continue_img.get_height()*scr_size/500)))
+    continue_img = pygame.transform.scale(continue_img, (round(continue_img.get_width()*size.ratio), round(continue_img.get_height()*size.ratio)))
     continueRect = pygame.Rect(0, 0, continue_img.get_width(), continue_img.get_height())
-    continueRect.centerx = scr_size * 0.2
-    continueRect.centery = scr_size * 0.7
+    continueRect.centerx = size.coinxonepos
+    continueRect.centery = size.coinpos
 
     bomb_img,bombRect = load_image('bomb_click.png')
-    bomb_img = pygame.transform.scale(bomb_img, (round(bomb_img.get_width()*scr_size/500), round(bomb_img.get_height()*scr_size/500)))
+    bomb_img = pygame.transform.scale(bomb_img, (round(bomb_img.get_width()*size.ratio), round(bomb_img.get_height()*size.ratio)))
     bombRect = pygame.Rect(0, 0, bomb_img.get_width(), bomb_img.get_height())
-    bombRect.centerx = scr_size * 0.4
-    bombRect.centery = scr_size * 0.7
+    bombRect.centerx = size.coinxtwopos
+    bombRect.centery = size.coinpos
 
     shield_img,shieldRect = load_image('shield_click.png')
-    shield_img = pygame.transform.scale(shield_img, (round(shield_img.get_width()*scr_size/500), round(shield_img.get_height()*scr_size/500)))
+    shield_img = pygame.transform.scale(shield_img, (round(shield_img.get_width()*size.ratio), round(shield_img.get_height()*size.ratio)))
     shieldRect = pygame.Rect(0, 0, shield_img.get_width(), shield_img.get_height())
-    shieldRect.centerx = scr_size * 0.6
-    shieldRect.centery = scr_size * 0.7
+    shieldRect.centerx = size.coinxthreepos
+    shieldRect.centery = size.coinpos
     # ---
     shield_on_img,shieldOnRect = load_image('ship_shield.png')
-    shield_on_img = pygame.transform.scale(shield_on_img, (round(shield_on_img.get_width()*scr_size/500), round(shield_on_img.get_height()*scr_size/500)))
+    shield_on_img = pygame.transform.scale(shield_on_img, (round(shield_on_img.get_width()*size.ratio), round(shield_on_img.get_height()*size.ratio)))
     shieldOnRect = pygame.Rect(0, 0, shield_on_img.get_width(), shield_on_img.get_height())
-    shieldOnRect.centerx = scr_size * 0.6
-    shieldOnRect.centery = scr_size * 0.7
+    shieldOnRect.centerx = size.coinxthreepos
+    shieldOnRect.centery = size.coinpos
 
     double_img,doubleRect = load_image('doublemissile_powerup.png')
-    double_img = pygame.transform.scale(double_img, (round(double_img.get_width()*scr_size/500), round(double_img.get_height()*scr_size/500)))
+    double_img = pygame.transform.scale(double_img, (round(double_img.get_width()*size.ratio), round(double_img.get_height()*size.ratio)))
     doubleRect = pygame.Rect(0, 0, double_img.get_width(), double_img.get_height())
-    doubleRect.centerx = scr_size * 0.8
-    doubleRect.centery = scr_size * 0.7
+    doubleRect.centerx = size.coinxfourpos
+    doubleRect.centery = size.coinpos
     # ---
     double_on_img,doubleOnRect = load_image('doublemissile_click.png')
-    double_on_img = pygame.transform.scale(double_on_img, (round(double_on_img.get_width()*scr_size/500), round(double_on_img.get_height()*scr_size/500)))
+    double_on_img = pygame.transform.scale(double_on_img, (round(double_on_img.get_width()*size.ratio), round(double_on_img.get_height()*size.ratio)))
     doubleOnRect = pygame.Rect(0, 0, double_on_img.get_width(), double_on_img.get_height())
-    doubleOnRect.centerx = scr_size * 0.8
-    doubleOnRect.centery = scr_size * 0.7
+    doubleOnRect.centerx = size.coinxfourpos
+    doubleOnRect.centery = size.coinpos
 
     continueText = font.render('Continue',1,WHITE)
     continuePos = pygame.Rect(0,0,continueText.get_width(), continueText.get_height())
-    continuePos.centerx = scr_size * 0.2
-    continuePos.centery = scr_size * 0.8
+    continuePos.centerx = size.coinxonepos
+    continuePos.centery = size.coinypose
 
     bombText_Item = font.render('Bomb',1,WHITE)
     bombItemPos = pygame.Rect(0,0,bombText_Item.get_width(), bombText_Item.get_height())
-    bombItemPos.centerx = scr_size * 0.4
-    bombItemPos.centery = scr_size * 0.8
+    bombItemPos.centerx = size.coinxtwopos
+    bombItemPos.centery = size.coinypose
 
     shieldText = font.render('Shield',1,WHITE)
     shieldPos = pygame.Rect(0,0,shieldText.get_width(), shieldText.get_height())
-    shieldPos.centerx = scr_size * 0.6
-    shieldPos.centery = scr_size * 0.8
+    shieldPos.centerx = size.coinxthreepos
+    shieldPos.centery = size.coinypose
 
     doubleText = font.render('Double',1,WHITE)
     doublePos = pygame.Rect(0,0,doubleText.get_width(), doubleText.get_height())
-    doublePos.centerx = scr_size * 0.8
-    doublePos.centery = scr_size * 0.8
+    doublePos.centerx = size.coinxfourpos
+    doublePos.centery = size.coinypose
 
     selectItem = font.render('^',1,WHITE)
     selectItemPos = pygame.Rect(0,0,selectItem.get_width(), selectItem.get_height())
-    selectItemPos.centerx = scr_size * 0.2
-    selectItemPos.centery = scr_size * 0.8
+    selectItemPos.centerx = size.coinxonepos
+    selectItemPos.centery = size.coinypose
     
     ###########
 
     # 업적 이미지 생성
+    shoot_img = []
+    shoot_rect = []
+    kill_img = []
+    kill_rect = []
+    shoot_imgset = ['shoot_10.png', 'shoot_100.png', 'shoot_1000.png']
+    kill_imgset = ['kill_10.png', 'kill_100.png', 'kill_1000.png']
 
-    achievement_set = ['' for i in range(12)]
-    achievement_imgset = ['shoot_10.png', 'shoot_100.png', 'shoot_1000.png', 'kill_10.png', 'kill_100.png', 'kill_1000.png']
-    for i in range(len(achievement_imgset)) :
-        achievement_set[i], achievement_set[i+6] = load_image(achievement_imgset[i])
-        achievement_set[i] = pygame.transform.scale(achievement_set[i], (round(achievement_set[i].get_width()*scr_size/3000), round(achievement_set[i].get_height()*scr_size/3000)))
-        achievement_set[i+6] = pygame.Rect(0, 0, achievement_set[i].get_width(), achievement_set[i].get_height())
-        achievement_set[i+6].centerx = scr_size * 0.25 * (1 + i%3)
-        achievement_set[i+6].centery = scr_size * 0.25 * (2 + (i+1)//3)
+    for i in range(len(shoot_imgset)) :
+        img, rec = load_image(shoot_imgset[i])
+        shoot_img.append(img)
+        shoot_rect.append(rec)
+        shoot_img[i] = pygame.transform.scale(shoot_img[i], (round(shoot_img[i].get_width()*size.achievement), round(shoot_img[i].get_height()*size.achievement)))
+        shoot_rect[i] = pygame.Rect(0, 0, shoot_img[i].get_width(), shoot_img[i].get_height())
+        shoot_rect[i].centerx = size.achievementpos * achievement_posx(i)
+        shoot_rect[i].centery = size.achievementpos * achievement_posy(i)
 
-    shoot10_img, shoot100_img, shoot1000_img, kill10_img, kill100_img, kill1000_img, shoot10Rect, shoot100Rect, shoot1000Rect, kill10Rect, kill100Rect, kill1000Rect = achievement_set
-    
+    for i in range(len(kill_imgset)) :
+        img, rec = load_image(kill_imgset[i])
+        kill_img.append(img)
+        kill_rect.append(rec)
+        kill_img[i] = pygame.transform.scale(kill_img[i], (round(kill_img[i].get_width()*size.achievement), round(kill_img[i].get_height()*size.achievement)))
+        kill_rect[i] = pygame.Rect(0, 0, kill_img[i].get_width(), kill_img[i].get_height())
+        kill_rect[i].centerx = size.achievementpos * achievement_posx(i)
+        kill_rect[i].centery = size.achievementpos + size.achievementpos * achievement_posy(i)
+
     ######################
 
     selection = 1
@@ -360,17 +535,17 @@ def main(scr, level, id):
 
     # 버튼 구현
     modeImg_one = pygame.image.load("data/mode1.png")
-    modeImg_one = pygame.transform.scale(modeImg_one, (round(modeImg_one.get_width()*scr_size/500), round(modeImg_one.get_height()*scr_size/500)))
+    modeImg_one = pygame.transform.scale(modeImg_one, (round(modeImg_one.get_width()*size.ratio), round(modeImg_one.get_height()*size.ratio)))
     modeImg_two = pygame.image.load("data/mode2.png")
-    modeImg_two = pygame.transform.scale(modeImg_two, (round(modeImg_two.get_width()*scr_size/500), round(modeImg_two.get_height()*scr_size/500)))
+    modeImg_two = pygame.transform.scale(modeImg_two, (round(modeImg_two.get_width()*size.ratio), round(modeImg_two.get_height()*size.ratio)))
     quitImg = pygame.image.load("data/quiticon.png")
-    quitImg = pygame.transform.scale(quitImg, (round(quitImg.get_width()*scr_size/500), round(quitImg.get_height()*scr_size/500)))
+    quitImg = pygame.transform.scale(quitImg, (round(quitImg.get_width()*size.ratio), round(quitImg.get_height()*size.ratio)))
     clickmodeImg_one = pygame.image.load("data/mode1clicked.png")
-    clickmodeImg_one = pygame.transform.scale(clickmodeImg_one, (round(clickmodeImg_one.get_width()*scr_size/500), round(clickmodeImg_one.get_height()*scr_size/500)))
+    clickmodeImg_one = pygame.transform.scale(clickmodeImg_one, (round(clickmodeImg_one.get_width()*size.ratio), round(clickmodeImg_one.get_height()*size.ratio)))
     clickmodeImg_two = pygame.image.load("data/mode2clicked.png")
-    clickmodeImg_two = pygame.transform.scale(clickmodeImg_two, (round(clickmodeImg_two.get_width()*scr_size/500), round(clickmodeImg_two.get_height()*scr_size/500)))
+    clickmodeImg_two = pygame.transform.scale(clickmodeImg_two, (round(clickmodeImg_two.get_width()*size.ratio), round(clickmodeImg_two.get_height()*size.ratio)))
     clickQuitImg = pygame.image.load("data/clickedQuitIcon.png")
-    clickQuitImg = pygame.transform.scale(clickQuitImg, (round(clickQuitImg.get_width()*scr_size/500), round(clickQuitImg.get_height()*scr_size/500)))
+    clickQuitImg = pygame.transform.scale(clickQuitImg, (round(clickQuitImg.get_width()*size.ratio), round(clickQuitImg.get_height()*size.ratio)))
 
     if music and pygame.mixer:
         pygame.mixer.music.play(loops=-1)
@@ -382,12 +557,7 @@ def main(scr, level, id):
             return min(scr_x, scr_y), level_size, id    # 메뉴화면에서만 창 사이즈 크기 확인하고, 변경되면 main 재시작
         clock.tick(clockTime)
 
-        screen.blit(
-            background, (0, 0), area=pygame.Rect(
-                0, backgroundLoc, scr_size, scr_size))
-        backgroundLoc -= speed
-        if backgroundLoc - speed <= speed:
-            backgroundLoc = scr_size*3
+        screen, background, backgroundLoc = background_update(screen, background, backgroundLoc)
 
         for event in pygame.event.get():
             if (event.type == pygame.QUIT):
@@ -426,15 +596,7 @@ def main(scr, level, id):
                         hiScores_local.append([score_id, score_score, str(score_accuracy)+"%"])
                         
                     # 중복 아이디 제거
-                    hiScores_local = sorted(hiScores_local, key=lambda h: h[1])
-                    for i in range(len(hiScores_local)-1):
-                        score_id = hiScores_local[i][0]
-                        for j in range(i+1, len(hiScores_local)):
-                            if score_id == hiScores_local[j][0]:
-                                hiScores_local[i][2] = "delete";
-                    hiScores_local = [x for x in hiScores_local if x[2] != "delete"]
-                    hiScores_local = sorted(hiScores_local, key=lambda h: h[1], reverse=True)
-                    print(hiScores_local)
+                    hiScores_local = remove_id_overlap(hiScores_local)
                     highScoreTexts = [font.render("NAME", 1, RED), font.render("SCORE", 1, RED), font.render("ACCURACY", 1, RED)]
                     for hs in hiScores_local:
                         highScoreTexts.extend([font.render(str(hs[x]), 1, WHITE) for x in range(3)])
@@ -442,32 +604,7 @@ def main(scr, level, id):
                         topleft=highScorePos[x].bottomleft) for x in range(-3, 0)])
                     showHiScores = True
                 elif selection == 2 and id != '' :
-                    req = grequests.get(url + '/get_record/')
-                    res = grequests.map([req])
-                    Scores = res[0].content.decode()[1:-1].split(',')
-                    hiScores = []
-                    for i in range(len(Scores)) :
-                        if i % 3 == 0 : score_id = Scores[i][2:-1]
-                        elif i % 3 == 1 : score_score = int(Scores[i][:])
-                        elif i % 3 == 2:
-                            score_accuracy = round(float(Scores[i][:-1])*100, 2)
-                            hiScores.append([score_id, score_score, str(score_accuracy)+"%"])
-                    # 중복 아이디 제거
-                    hiScores = sorted(hiScores, key=lambda h: h[1])
-                    for i in range(len(hiScores)-1):
-                        score_id = hiScores[i][0]
-                        for j in range(i+1, len(hiScores)):
-                            if score_id == hiScores[j][0]:
-                                hiScores[i][2] = "delete";
-                    hiScores = [x for x in hiScores if x[2] != "delete"]
-                    hiScores = sorted(hiScores, key=lambda h: h[1], reverse=True)
-                    print(hiScores)
-                    highScoreTexts = [font.render("NAME", 1, RED), font.render("SCORE", 1, RED), font.render("ACCURACY", 1, RED)]
-                    for hs in hiScores:
-                        highScoreTexts.extend([font.render(str(hs[x]), 1, WHITE) for x in range(3)])
-                        highScorePos.extend([highScoreTexts[x].get_rect(
-                        topleft=highScorePos[x].bottomleft) for x in range(-3, 0)])
-                    showHiScores = True
+                    highScoreTexts, highScorePos, showHiScores = get_hiscores(highScoreTexts, highScorePos)
                 elif (selection == 5 and id == '') or (selection == 3 and id != ''):
                     soundFX = not soundFX
                     if soundFX:
@@ -486,28 +623,7 @@ def main(scr, level, id):
                     res = grequests.map([req])
                     _ , shoot_record, kill_record = res[0].content.decode()[1:-1].split(',')
                     
-                    for i in range(len(shoot_progress)) :
-                        if int(shoot_record) < shoot_progress[i] :
-                            shootText = shoot_record + " / " + str(shoot_progress[i])
-                            break
-
-                    for i in range(len(kill_progress)) :
-                        if int(kill_record) < kill_progress[i] :
-                            killText = kill_record + " / " + str(kill_progress[i])
-                            break
-
-                    achieveTexts = [font.render("ACHIEVEMENT NAME", 1, RED),
-                                    font.render("Progress", 1, RED),
-                                    font.render("shoot", 1, WHITE),
-                                    font.render(shootText, 1, WHITE),
-                                    font.render("kill", 1, WHITE),
-                                    font.render(killText, 1, WHITE)]
-                    achievePos = [achieveTexts[0].get_rect(
-                                    topleft=screen.get_rect().inflate(-scr_size*0.2, -scr_size*0.2).topleft),
-                                achieveTexts[1].get_rect(
-                                    topright=screen.get_rect().inflate(-scr_size*0.2, -scr_size*0.2).topright)]
-                    for i in range(4) :
-                        achievePos.append(achieveTexts[i].get_rect(topleft=achievePos[i].bottomleft))
+                    achieveTexts = set_achievetext(shoot_record, kill_record, achieveTexts)
 
                     showAchievement = True
                 elif (selection == 7 and id == '') or (selection == 6 and id != ''):
@@ -553,25 +669,7 @@ def main(scr, level, id):
         if showHiScores:
             textOverlays = zip(highScoreTexts, highScorePos)
         elif showAchievement:
-            if int(kill_record) >= 1000 :
-                screen.blit(kill1000_img, kill1000Rect)
-                screen.blit(kill100_img, kill100Rect)
-                screen.blit(kill10_img, kill10Rect)
-            elif int(kill_record) >= 100 :
-                screen.blit(kill100_img, kill100Rect)
-                screen.blit(kill10_img, kill10Rect)
-            elif int(kill_record) >= 10 :
-                screen.blit(kill10_img, kill10Rect)
-            
-            if int(shoot_record) >= 1000 :
-                screen.blit(shoot1000_img, shoot1000Rect)
-                screen.blit(shoot100_img, shoot100Rect)
-                screen.blit(shoot10_img, shoot10Rect)
-            elif int(shoot_record) >= 100 :
-                screen.blit(shoot100_img, shoot100Rect)
-                screen.blit(shoot10_img, shoot10Rect)
-            elif int(shoot_record) >= 10 :
-                screen.blit(shoot10_img, shoot10Rect)
+            screen = achievement_blit(screen, shoot_record, kill_record)
                 
             textOverlays = zip(achieveTexts, achievePos)
         elif id == '' :
@@ -597,72 +695,34 @@ def main(scr, level, id):
             screen.blit(title, titleRect)
 
         #Text Update
-        if language == "ENG": #기본 설정 영어
-            startText = font.render('START GAME', 1, WHITE)
-            loginText = font.render('LOGIN', 1, WHITE)
-            hiScoreText = font.render('HIGH SCORES', 1, WHITE)
-            createaccountText = font.render('CREATE ACCOUNT', 1, WHITE)
-            fxText = font.render('SOUND FX ', 1, WHITE)
-            fxOnText = font.render('ON', 1, RED)
-            fxOffText = font.render('OFF', 1, RED)
-            musicText = font.render('MUSIC', 1, WHITE)
-            achievementText = font.render('ACHIEVEMENTS', 1, WHITE)
-            musicOnText = font.render('ON', 1, RED)
-            musicOffText = font.render('OFF', 1, RED)
-            quitText = font.render('QUIT', 1, WHITE)
-            restartText = font.render('RESTART', 1, WHITE)
-            languageText = font.render('LANGUAGE', 1, WHITE)
-            logoutText = font.render('LOGOUT', 1, WHITE)
-            
-
-        if language == "KOR":
-            startText = font2.render('게임 시작', 1, WHITE)
-            loginText = font2.render('로그인', 1, WHITE)
-            hiScoreText = font2.render('최고 점수', 1, WHITE)
-            createaccountText = font2.render('계정 생성', 1, WHITE)
-            fxText = font2.render('효과음 ', 1, WHITE)
-            fxOnText = font2.render('켜짐', 1, RED)
-            fxOffText = font2.render('꺼짐', 1, RED)
-            musicText = font2.render('음악', 1, WHITE)
-            achievementText = font2.render('업적', 1, WHITE)
-            musicOnText = font2.render('켜짐', 1, RED)
-            musicOffText = font2.render('꺼짐', 1, RED)
-            quitText = font2.render('종료', 1, WHITE)
-            restartText = font2.render('다시 시작', 1, WHITE)
-            languageText = font2.render('언어', 1, WHITE)
-            logoutText = font2.render('로그아웃', 1, WHITE)
-            
+        startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts = set_language(language)
 
         for txt, pos in textOverlays:
             screen.blit(txt, pos)
 
         #버튼 구현
-        button1Pos = 0.08 #mode1
-        button2Pos = 0.52 #mode2
-        button3Pos = 0.82 #quit
-
-        modeButton_one = Button(screen,modeImg_one,round(scr_size*button1Pos),round(scr_size*0.9),round(scr_size*0.08),round(scr_size*0.04),clickmodeImg_one,round(scr_size*(button1Pos-0.01)),round(scr_size*0.896),'mode_one') # 버튼 클릭시 실행하고 싶은 파일을 'mode_one'에 써주면 된다.
-        modeButton_two = Button(screen,modeImg_two,round(scr_size*button2Pos),round(scr_size*0.9),round(scr_size*0.08),round(scr_size*0.04),clickmodeImg_two,round(scr_size*(button2Pos-0.01)),round(scr_size*0.896),'mode_two')
-        quitButton = Button(screen,quitImg,round(scr_size*button3Pos),round(scr_size*0.9),round(scr_size*0.08),round(scr_size*0.04),clickQuitImg,round(scr_size*(button3Pos-0.01)),round(scr_size*0.896),'quitgame')
+        modeButton_one = Button(screen,modeImg_one,size.button1pos_1,size.buttonpos_2,size.buttonpos_3,size.buttonpos_4,clickmodeImg_one,size.button1pos_1_ad,size.button_ad,'mode_one') # 버튼 클릭시 실행하고 싶은 파일을 'mode_one'에 써주면 된다.
+        modeButton_two = Button(screen,modeImg_two,size.button2pos_1,size.buttonpos_2,size.buttonpos_3,size.buttonpos_4,clickmodeImg_two,size.button2pos_1_ad,size.button_ad,'mode_two')
+        quitButton = Button(screen,quitImg,size.button3pos_1,size.buttonpos_2,size.buttonpos_3,size.buttonpos_4,clickQuitImg,size.button3pos_1_ad,size.button_ad,'quitgame')
 
         if modeButton_one.lvl_size == -1 :
-            return scr_size, 1, id
+            return scr_size, mode1_lvl_size, id
         if modeButton_two.lvl_size == -2 :
-            return scr_size, 1.6, id
+            return scr_size, mode2_lvl_size, id
 
         pygame.display.flip()
-        #여기까지 버튼 구현
+        #여기까지 버튼 구현size.button_ad
 
     while ship.alive:
         clock.tick(clockTime)
 
-        if aliensLeftThisWave >= 20:
+        if aliensLeftThisWave >= aliennum:
             powerupTimeLeft -= 1
             coinTimeLeft -=1
         if powerupTimeLeft <= 0:
             powerupTimeLeft = powerupTime
             random.choice(powerupTypes)().add(powerups, allsprites)
-        if coinTimeLeft <=0:
+        if coinTimeLeft <= 0:
             coinTimeLeft = coinTime
             random.choice(coinTypes)().add(coingroup,allsprites)
 
@@ -713,12 +773,7 @@ def main(scr, level, id):
                 selectPos = selectText.get_rect(topright=restartPos.topleft)
                 while inPmenu:
                     clock.tick(clockTime)
-                    screen.blit(
-                        background, (0, 0), area=pygame.Rect(
-                            0, backgroundLoc, scr_size, scr_size))
-                    backgroundLoc -= speed
-                    if backgroundLoc - speed <= speed:
-                        backgroundLoc = scr_size*3
+                    screen, background, backgroundLoc = background_update(screen, background, backgroundLoc)
 
                     ###
                     for event in pygame.event.get():
@@ -735,56 +790,7 @@ def main(scr, level, id):
                                 inPmenu = False
                                 break
                             elif selection == 2 and id == '' :
-                                hiScores = Database.getScores()
-                                hiScores_local = []
-                                for i in range(len(hiScores)):
-                                    score_id = hiScores[i][0]
-                                    score_score = hiScores[i][1]
-                                    score_accuracy = round(float(hiScores[i][2])*100, 2)
-                                    hiScores_local.append([score_id, score_score, str(score_accuracy)+"%"])
-                                # 중복 아이디 제거
-                                hiScores_local = sorted(hiScores_local, key=lambda h: h[1])
-                                for i in range(len(hiScores_local)-1):
-                                    score_id = hiScores_local[i][0]
-                                    for j in range(i+1, len(hiScores_local)):
-                                        if score_id == hiScores_local[j][0]:
-                                            hiScores_local[i][2] = "delete";
-                                hiScores_local = [x for x in hiScores_local if x[2] != "delete"]
-                                hiScores_local = sorted(hiScores_local, key=lambda h: h[1], reverse=True)
-                                print(hiScores_local)
-                                highScoreTexts = [font.render("NAME", 1, RED), font.render("SCORE", 1, RED), font.render("ACCURACY", 1, RED)]
-                                for hs in hiScores_local:
-                                    highScoreTexts.extend([font.render(str(hs[x]), 1, WHITE) for x in range(3)])
-                                    highScorePos.extend([highScoreTexts[x].get_rect(
-                                    topleft=highScorePos[x].bottomleft) for x in range(-3, 0)])
-                                showHiScores = True
-                            elif selection == 2 and id != '' :
-                                req = grequests.get(url + '/get_record/')
-                                res = grequests.map([req])
-                                Scores = res[0].content.decode()[1:-1].split(',')
-                                hiScores = []
-                                for i in range(len(Scores)) :
-                                    if i % 3 == 0 : score_id = Scores[i][2:-1]
-                                    elif i % 3 == 1 : score_score = int(Scores[i][:])
-                                    elif i % 3 == 2:
-                                        score_accuracy = round(float(Scores[i][:-1])*100, 2)
-                                        hiScores.append([score_id, score_score, str(score_accuracy)+"%"])
-                                # 중복 아이디 제거
-                                hiScores = sorted(hiScores, key=lambda h: h[1])
-                                for i in range(len(hiScores)-1):
-                                    score_id = hiScores[i][0]
-                                    for j in range(i+1, len(hiScores)):
-                                        if score_id == hiScores[j][0]:
-                                            hiScores[i][2] = "delete";
-                                hiScores = [x for x in hiScores if x[2] != "delete"]
-                                hiScores = sorted(hiScores, key=lambda h: h[1], reverse=True)
-                                print(hiScores)
-                                highScoreTexts = [font.render("NAME", 1, RED), font.render("SCORE", 1, RED), font.render("ACCURACY", 1, RED)]
-                                for hs in hiScores:
-                                    highScoreTexts.extend([font.render(str(hs[x]), 1, WHITE) for x in range(3)])
-                                    highScorePos.extend([highScoreTexts[x].get_rect(
-                                    topleft=highScorePos[x].bottomleft) for x in range(-3, 0)])
-                                showHiScores = True
+                                highScoreTexts, highScorePos, showHiScores = get_hiscores(highScoreTexts, highScorePos)
                             elif selection == 3:
                                 soundFX = not soundFX
                                 if soundFX:
@@ -823,25 +829,7 @@ def main(scr, level, id):
                     if showHiScores:
                         textOverlays = zip(highScoreTexts, highScorePos)
                     elif showAchievement:
-                        if int(kill_record) >= 1000 :
-                            screen.blit(kill1000_img, kill1000Rect)
-                            screen.blit(kill100_img, kill100Rect)
-                            screen.blit(kill10_img, kill10Rect)
-                        elif int(kill_record) >= 100 :
-                            screen.blit(kill100_img, kill100Rect)
-                            screen.blit(kill10_img, kill10Rect)
-                        elif int(kill_record) >= 10 :
-                            screen.blit(kill10_img, kill10Rect)
-                        
-                        if int(shoot_record) >= 1000 :
-                            screen.blit(shoot1000_img, shoot1000Rect)
-                            screen.blit(shoot100_img, shoot100Rect)
-                            screen.blit(shoot10_img, shoot10Rect)
-                        elif int(shoot_record) >= 100 :
-                            screen.blit(shoot100_img, shoot100Rect)
-                            screen.blit(shoot10_img, shoot10Rect)
-                        elif int(shoot_record) >= 10 :
-                            screen.blit(shoot10_img, shoot10Rect)
+                        screen = achievement_blit(screen, shoot_record, kill_record)
 
                         textOverlays = zip(achieveTexts, achievePos)
                     elif id == '':
@@ -863,7 +851,7 @@ def main(scr, level, id):
                                             musicPos, achievementPos, quitPos, selectPos,
                                             fxOnPos if soundFX else fxOffPos,
                                             musicOnPos if music else musicOffPos])
-                        screen.blit(pause, titleRect)
+                        screen.blit(pause, pauseRect)
                     for txt, pos in textOverlays:
                         screen.blit(txt, pos)
                     pygame.display.flip()
@@ -873,8 +861,8 @@ def main(scr, level, id):
                 ItemDict = {1: continuePos, 2: bombItemPos, 3: shieldPos, 4: doublePos}
                 shield_limit = 0
                 selectItemPos = pygame.Rect(0,0,selectItem.get_width(), selectItem.get_height())
-                selectItemPos.centerx = scr_size * 0.2
-                selectItemPos.centerx = scr_size * 0.8
+                selectItemPos.centerx = size.selectitemposx
+                selectItemPos.centery = size.selectitemposy
                 shield_on = False
                 double_on = False
                 while inCoin:
@@ -883,12 +871,7 @@ def main(scr, level, id):
                     coinShopText = font.render("Coins: "+ str(coinsHeld),1,WHITE)
                     bombCoinPos = bombCoinText.get_rect(bottomleft=screen.get_rect().bottomleft)
                     coinShopPos = coinShopText.get_rect(bottomright=screen.get_rect().bottomright)  
-                    screen.blit(
-                        background, (0, 0), area=pygame.Rect(
-                            0, backgroundLoc, scr_size, scr_size))
-                    backgroundLoc -= speed
-                    if backgroundLoc - speed <= speed:
-                        backgroundLoc = scr_size*3
+                    screen, background, backgroundLoc = background_update(screen, background, backgroundLoc)
 
                     for event in pygame.event.get():
                         if (event.type == pygame.QUIT):
@@ -899,7 +882,7 @@ def main(scr, level, id):
                                 inCoin = False
                                 break
                             elif selection == 2:    
-                                if coinsHeld >0:
+                                if coinsHeld > 0:
                                     bombsHeld +=1
                                     coinsHeld -=1
                                 else:
@@ -913,7 +896,7 @@ def main(scr, level, id):
                                 else:
                                     continue
                             elif selection == 4 :
-                                if coinsHeld >0 :
+                                if coinsHeld > 0 :
                                     coinsHeld -=1
                                     doublemissile = True
                                     double_on = True
@@ -958,22 +941,7 @@ def main(scr, level, id):
                         bomb, alien) and alien in Alien.active:
                     alien.table()
                     Explosion.position(alien.rect.center)
-                    missilesFired += 1
-                    aliensLeftThisWave -= 1
-                    kill_count += 1
-                    #score differentiation by Alien color
-                    #wave1 aliens
-                    if alien.pType == 'green' or alien.pType == 'orange':
-                        score += 1
-                    #wave2 alien
-                    elif alien.pType == 'white':
-                        score += 2
-                    #wave3 alien
-                    elif alien.pType == 'red':
-                        score += 4
-                    #wave4 alien
-                    elif alien.pType == 'yellow':
-                        score += 8
+                    aliensLeftThisWave, kill_count, score = kill_alien(alien, aliensLeftThisWave, kill_count, score)
                     if soundFX:
                         alien_explode_sound.play()
             for missile in Missile.active:
@@ -982,42 +950,14 @@ def main(scr, level, id):
                     alien.table()
                     missile.table()
                     Explosion.position(alien.rect.center)
-                    aliensLeftThisWave -= 1
-                    kill_count += 1
-                    #score differentiation by Alien color
-                    #wave1 aliens
-                    if alien.pType == 'green' or alien.pType == 'orange':
-                        score += 1
-                    #wave2 alien
-                    elif alien.pType == 'white':
-                        score += 2
-                    #wave3 alien
-                    elif alien.pType == 'red':
-                        score += 4
-                    #wave4 alien
-                    elif alien.pType == 'yellow':
-                        score += 8
+                    aliensLeftThisWave, kill_count, score = kill_alien(alien, aliensLeftThisWave, kill_count, score)
                     if soundFX:
                         alien_explode_sound.play()
             if pygame.sprite.collide_rect(alien, ship):
                 if ship.shieldUp:
                     alien.table()
                     Explosion.position(alien.rect.center)
-                    aliensLeftThisWave -= 1
-                    kill_count += 1
-                    #score differentiation by Alien color
-                    #wave1 aliens
-                    if alien.pType == 'green' or alien.pType == 'orange':
-                        score += 1
-                    #wave2 alien
-                    elif alien.pType == 'white':
-                        score += 2
-                    #wave3 alien
-                    elif alien.pType == 'red':
-                        score += 4
-                    #wave4 alien
-                    elif alien.pType == 'yellow':
-                        score += 8
+                    aliensLeftThisWave, kill_count, score = kill_alien(alien, aliensLeftThisWave, kill_count, score)
                     missilesFired += 1
                     ship.shieldUp = False
                 else:
@@ -1065,12 +1005,7 @@ def main(scr, level, id):
             curTime -= 1
 
      # Update text overlays
-        waveText = font.render("Wave: " + str(wave), 1, WHITE)
-        leftText = font.render("Aliens Left: " + str(aliensLeftThisWave),
-                               1, WHITE)
-        scoreText = font.render("Score: " + str(score), 1, WHITE)
-        bombText = font.render("Bombs: " + str(bombsHeld), 1, WHITE)
-        coinText = font.render("Coins: "+ str(coinsHeld),1,WHITE)
+        waveText, leftText, scoreText, bombText, coinText = ingame_text_update(language)
 
         wavePos = waveText.get_rect(topleft=screen.get_rect().topleft)
         leftPos = leftText.get_rect(midtop=screen.get_rect().midtop)
@@ -1119,13 +1054,13 @@ def main(scr, level, id):
                     textposition.append(speedUpPos)
             elif betweenWaveCount == 0:
                 if wave % 4 == 0:
-                    speed += 0.5
+                    speed += speedup
                     MasterSprite.speed = speed
                     ship.initializeKeys()
-                    aliensThisWave = 10
+                    aliensThisWave = setaliennum
                     aliensLeftThisWave = Alien.numOffScreen = aliensThisWave
                 else:
-                    aliensThisWave *= 2
+                    aliensThisWave = int(aliensThisWave * aliennumup)
                     aliensLeftThisWave = Alien.numOffScreen = aliensThisWave
                 if wave == 1:
                     Alien.pool.add([Fasty() for _ in range(5)])
@@ -1142,25 +1077,7 @@ def main(scr, level, id):
                 if showHiScores:
                     textOverlays = zip(highScoreTexts, highScorePos)
                 elif showAchievement:
-                    if int(kill_record) >= 1000 :
-                        screen.blit(kill1000_img, kill1000Rect)
-                        screen.blit(kill100_img, kill100Rect)
-                        screen.blit(kill10_img, kill10Rect)
-                    elif int(kill_record) >= 100 :
-                        screen.blit(kill100_img, kill100Rect)
-                        screen.blit(kill10_img, kill10Rect)
-                    elif int(kill_record) >= 10 :
-                        screen.blit(kill10_img, kill10Rect)
-                    
-                    if int(shoot_record) >= 1000 :
-                        screen.blit(shoot1000_img, shoot1000Rect)
-                        screen.blit(shoot100_img, shoot100Rect)
-                        screen.blit(shoot10_img, shoot10Rect)
-                    elif int(shoot_record) >= 100 :
-                        screen.blit(shoot100_img, shoot100Rect)
-                        screen.blit(shoot10_img, shoot10Rect)
-                    elif int(shoot_record) >= 10 :
-                        screen.blit(shoot10_img, shoot10Rect)
+                    screen = achievement_blit(screen, shoot_record, kill_record)
 
                     textOverlays = zip(achieveTexts, achievePos)
                 else:
@@ -1179,12 +1096,7 @@ def main(scr, level, id):
         textOverlays = zip(text, textposition)
 
      # Update and draw all sprites and text
-        screen.blit(
-            background, (0, 0), area=pygame.Rect(
-                0, backgroundLoc, scr_size, scr_size))
-        backgroundLoc -= speed
-        if backgroundLoc - speed <= speed:
-            backgroundLoc = scr_size*3
+        screen, background, backgroundLoc = background_update(screen, background, backgroundLoc)
         allsprites.update()
         allsprites.draw(screen)
         alldrawings.update()
@@ -1192,7 +1104,7 @@ def main(scr, level, id):
         for txt, pos in textOverlays:
             screen.blit(txt, pos)
         # life 구현
-        ship.draw_lives(screen,scr_size-80,scr_size/50)
+        ship.draw_lives(screen, size.lifex, size.lifey)
         pygame.display.flip()
 
     accuracy = round(score / missilesFired, 4) if missilesFired > 0 else 0.0
@@ -1220,7 +1132,7 @@ def main(scr, level, id):
                         sys.exit()
                     elif (event.type == pygame.KEYDOWN
                         and event.key in Keyboard.keys.keys()
-                        and len(idBuffer) < 8):
+                        and len(idBuffer) < id_len):
                         idBuffer.append(Keyboard.keys[event.key])
                         id = ''.join(idBuffer)
                     elif (event.type == pygame.KEYDOWN
@@ -1241,7 +1153,7 @@ def main(scr, level, id):
                         sys.exit()
                     elif (event.type == pygame.KEYDOWN
                         and event.key in Keyboard.keys.keys()
-                        and len(pwBuffer) < 3):
+                        and len(pwBuffer) < pw_len):
                         pwBuffer.append(Keyboard.keys[event.key])
                         password = ''.join(pwBuffer)
                     elif (event.type == pygame.KEYDOWN
@@ -1259,7 +1171,7 @@ def main(scr, level, id):
                         if req.response == None : return scr_size, level_size, ''
                         print(res[0].content)
                         if res[0].content == b'"Login Successed"' :
-                            print('login successed')
+                            print('login succeed')
                             return scr_size, level_size, id
                         else :
                             print('login failed')
@@ -1276,7 +1188,7 @@ def main(scr, level, id):
                         sys.exit()
                     elif (event.type == pygame.KEYDOWN
                         and event.key in Keyboard.keys.keys()
-                        and len(idBuffer) < 8):
+                        and len(idBuffer) < id_len):
                         idBuffer.append(Keyboard.keys[event.key])
                         id = ''.join(idBuffer)
                     elif (event.type == pygame.KEYDOWN
@@ -1298,7 +1210,7 @@ def main(scr, level, id):
                         sys.exit()
                     elif (event.type == pygame.KEYDOWN
                         and event.key in Keyboard.keys.keys()
-                        and len(pwBuffer) < 3):
+                        and len(pwBuffer) < pw_len):
                         pwBuffer.append(Keyboard.keys[event.key])
                         password = ''.join(pwBuffer)
                     elif (event.type == pygame.KEYDOWN
@@ -1338,7 +1250,7 @@ def main(scr, level, id):
                     return scr_size, level_size
                 elif (event.type == pygame.KEYDOWN
                     and event.key in Keyboard.keys.keys()
-                    and len(nameBuffer) < 8):
+                    and len(nameBuffer) < id_len):
                     nameBuffer.append(Keyboard.keys[event.key])
                     name = ''.join(nameBuffer)
                 elif (event.type == pygame.KEYDOWN
@@ -1366,9 +1278,7 @@ def main(scr, level, id):
             return scr_size, level_size, id
 
         if isHiScore: # 로그인 상태일 때, 수정 필요
-            hiScoreText = font.render('HIGH SCORE!', 1, RED)
-            hiScorePos = hiScoreText.get_rect(
-                midbottom=screen.get_rect().center)
+            hiScorePos = hiScoreText.get_rect(midbottom=screen.get_rect().center)
             scoreText = font.render(str(score), 1, WHITE)
             scorePos = scoreText.get_rect(midtop=hiScorePos.midbottom)
             enterNameText = font.render('ENTER YOUR NAME:', 1, RED)
@@ -1405,12 +1315,7 @@ def main(scr, level, id):
                               [gameOverPos, scorePos])
 
     # Update and draw all sprites
-        screen.blit(
-            background, (0, 0), area=pygame.Rect(
-                0, backgroundLoc, scr_size, scr_size))
-        backgroundLoc -= speed
-        if backgroundLoc - speed <= 0:
-            backgroundLoc = scr_size*3
+        screen, background, backgroundLoc = background_update(screen, background, backgroundLoc)
         allsprites.update()
         allsprites.draw(screen)
         alldrawings.update()
