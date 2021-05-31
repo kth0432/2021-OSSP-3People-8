@@ -284,6 +284,9 @@ def main(scr, level, id, language):
     direction = {None: (0, 0), pygame.K_UP: (0, -size.speed), pygame.K_DOWN: (0, size.speed),
              pygame.K_LEFT: (-size.speed, 0), pygame.K_RIGHT: (size.speed, 0)}
 
+    direction2 = {None: (0, 0), pygame.K_w: (0, -size.speed), pygame.K_s: (0, size.speed),
+             pygame.K_a: (-size.speed, 0), pygame.K_d: (size.speed, 0)}
+
     # Initialize everything
     pygame.mixer.pre_init(11025, -16, 2, 512)
     pygame.init()
@@ -322,12 +325,13 @@ def main(scr, level, id, language):
     clockTime = 60  # maximum FPS
     clock = pygame.time.Clock()
     ship = Ship()
+    ship2 = Ship()
     initialAlienTypes = (Siney, Spikey)
     powerupTypes = (BombPowerup, ShieldPowerup, DoublemissilePowerup)
     coinTypes = (CoinPowerup,CoinTwoPowerup)
     # Sprite groups
     alldrawings = pygame.sprite.Group()
-    allsprites = pygame.sprite.RenderPlain((ship,))
+    allsprites = pygame.sprite.RenderPlain((ship,ship2,))
     MasterSprite.allsprites = allsprites
     Alien.pool = pygame.sprite.Group(
         [alien() for alien in initialAlienTypes for _ in range(5)])
@@ -639,14 +643,17 @@ def main(scr, level, id, language):
                     inMenu = False
                     shoot_count , kill_count = 0, 0
                     ship.initializeKeys()
+                    ship2.initializeKeys()
                 elif selection == 2 and id == '':
                     showLogin = True
                     inMenu = False
                     ship.alive = False
+                    ship2.alive = False
                 elif selection == 3 and id == '':
                     showCreateaccount = True
                     inMenu = False
                     ship.alive = False
+                    ship2.alive = False
                 elif selection == 4 and id == '' :
                     hiScores = Database.getScores()
                     hiScores_local = []
@@ -772,7 +779,7 @@ def main(scr, level, id, language):
         pygame.display.flip()
         #여기까지 버튼 구현size.button_ad
 
-    while ship.alive:
+    while ship.alive and ship2.alive:
         clock.tick(clockTime)
 
         if aliensLeftThisWave >= aliennum:
@@ -783,7 +790,7 @@ def main(scr, level, id, language):
             random.choice(powerupTypes)().add(powerups, allsprites)
         if coinTimeLeft <= 0:
             coinTimeLeft = coinTime
-            random.choice(coinTypes)().add(coingroup,allsprites)
+            random.choice(coinTypes)().add(coingroup, allsprites)
 
 
         # Event Handling
@@ -802,7 +809,7 @@ def main(scr, level, id, language):
                 ship.horiz -= direction[event.key][0] * speed
                 ship.vert -= direction[event.key][1] * speed
             elif (event.type == pygame.KEYDOWN
-                  and event.key == pygame.K_SPACE):
+                  and event.key == pygame.K_o):
                 shoot_count += 1
                 # doublemissile 구현
                 if doublemissile:
@@ -815,13 +822,44 @@ def main(scr, level, id, language):
                 if soundFX:
                     missile_sound.play()
             elif (event.type == pygame.KEYDOWN
-                  and event.key == pygame.K_b):
+                  and event.key == pygame.K_i):
                 if bombsHeld > 0:
                     bombsHeld -= 1
                     newBomb = ship.bomb()
                     newBomb.add(bombs, alldrawings)
                     if soundFX:
                         bomb_sound.play()
+
+            if (event.type == pygame.KEYDOWN
+                  and event.key in direction2.keys()):
+                ship2.horiz += direction2[event.key][0] * speed
+                ship2.vert += direction2[event.key][1] * speed
+            elif (event.type == pygame.KEYUP
+                  and event.key in direction2.keys()):
+                ship2.horiz -= direction2[event.key][0] * speed
+                ship2.vert -= direction2[event.key][1] * speed
+            elif (event.type == pygame.KEYDOWN
+                  and event.key == pygame.K_v):
+                shoot_count += 1
+                # doublemissile 구현
+                if doublemissile:
+                    Missile.position(ship2.rect.topleft)
+                    Missile.position(ship2.rect.topright)
+                    missilesFired += 2
+                else:
+                    Missile.position(ship2.rect.midtop)
+                    missilesFired += 1
+                if soundFX:
+                    missile_sound.play()
+            elif (event.type == pygame.KEYDOWN
+                  and event.key == pygame.K_b):
+                if bombsHeld > 0:
+                    bombsHeld -= 1
+                    newBomb = ship2.bomb()
+                    newBomb.add(bombs, alldrawings)
+                    if soundFX:
+                        bomb_sound.play()
+
             # pause 구현부분
             elif (event.type == pygame.KEYDOWN and event.key == pygame.K_p):
                 inPmenu = True
@@ -1030,9 +1068,30 @@ def main(scr, level, id, language):
                     ship.shieldUp = False
                 else:
                     # life 구현 부분
-                    if ship.lives ==1:
+                    if ship.lives == 1:
                         ship.alive = False
                         ship.remove(allsprites)
+                        Explosion.position(ship.rect.center)
+                        if soundFX:
+                            ship_explode_sound.play()
+                    else:
+                        alien.table()
+                        Explosion.position(alien.rect.center)
+                        aliensLeftThisWave -= 1
+                        ship.lives -=1
+
+            if pygame.sprite.collide_rect(alien, ship2):
+                if ship2.shieldUp:
+                    alien.table()
+                    Explosion.position(alien.rect.center)
+                    aliensLeftThisWave, kill_count, score = kill_alien(alien, aliensLeftThisWave, kill_count, score)
+                    missilesFired += 1
+                    ship2.shieldUp = False
+                else:
+                    # life 구현 부분
+                    if ship.lives == 1:
+                        ship2.alive = False
+                        ship2.remove(allsprites)
                         Explosion.position(ship.rect.center)
                         if soundFX:
                             ship_explode_sound.play()
@@ -1054,9 +1113,31 @@ def main(scr, level, id, language):
                 powerup.kill()
             elif powerup.rect.top > powerup.area.bottom:
                 powerup.kill()
+
+        for powerup in powerups:
+            if pygame.sprite.collide_circle(powerup, ship2):
+                if powerup.pType == 'bomb':
+                    bombsHeld += 1
+                elif powerup.pType == 'shield':
+                    ship2.shieldUp = True
+                elif powerup.pType == 'doublemissile':
+                    doublemissile = True
+                powerup.kill()
+            elif powerup.rect.top > powerup.area.bottom:
+                powerup.kill()
         # coin Drop부분
         for coin in coingroup:
             if pygame.sprite.collide_circle(coin, ship):
+                if coin.pType == 'coin':
+                    coinsHeld +=1
+                elif coin.pType =='coin2':
+                    coinsHeld +=2
+                coin.kill()
+            elif coin.rect.top > coin.area.bottom:
+                coin.kill()
+
+        for coin in coingroup:
+            if pygame.sprite.collide_circle(coin, ship2):
                 if coin.pType == 'coin':
                     coinsHeld +=1
                 elif coin.pType =='coin2':
@@ -1125,6 +1206,7 @@ def main(scr, level, id, language):
                     speed += speedup
                     MasterSprite.speed = speed
                     ship.initializeKeys()
+                    ship2.initializeKeys()
                     aliensThisWave = setaliennum
                     aliensLeftThisWave = Alien.numOffScreen = aliensThisWave
                 else:
@@ -1234,7 +1316,7 @@ def main(scr, level, id, language):
                     elif (event.type == pygame.KEYDOWN
                         and event.key == pygame.K_RETURN
                         and len(password) > 0):
-                        is_input_id, inMenu, ship.alive, showLogin = True, True, True, False
+                        is_input_id, inMenu, ship.alive, ship2.alive, showLogin = True, True, True, True, False
                         data = {"id": id, "password": password}
                         req = grequests.post(url + '/login/', json=data)
                         res = grequests.map([req])
@@ -1295,7 +1377,7 @@ def main(scr, level, id, language):
                     elif (event.type == pygame.KEYDOWN
                         and event.key == pygame.K_RETURN
                         and len(password) > 0):
-                        is_input_id, inMenu, ship.alive, showCreateaccount = True, True, True, False
+                        is_input_id, inMenu, ship.alive, ship2.alive, showCreateaccount = True, True, True, True, False
                         data = {"id": id, "password": password}
                         req = grequests.post(url + "/create_account/", json=data)
                         res = grequests.map([req])
@@ -1355,7 +1437,10 @@ def main(scr, level, id, language):
             hiScorePos = hiScoreText.get_rect(midbottom=screen.get_rect().center)
             scoreText = font.render(str(score), 1, WHITE)
             scorePos = scoreText.get_rect(midtop=hiScorePos.midbottom)
-            enterNameText = font.render('ENTER YOUR NAME:', 1, RED)
+            if language == 'ENG' :
+                enterNameText = font.render('ENTER YOUR NAME:', 1, RED)
+            else :
+                enterNameText = font2.render('이름을 입력하세요:', 1, RED)
             enterNamePos = enterNameText.get_rect(midtop=scorePos.midbottom)
             nameText = font.render(name, 1, WHITE)
             namePos = nameText.get_rect(midtop=enterNamePos.midbottom)
