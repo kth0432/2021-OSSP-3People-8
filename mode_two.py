@@ -139,20 +139,20 @@ def main(scr, level, id, language):
 
     # 인게임에서 배경색으로 플레이어 영역 구분
     def background_update_half(screen, background, backgroundLoc) :
-        screen.fill((80, 20, 30),(0, 0, screen.get_width()//size.x_background_ratio, screen.get_height()))
         screen.blit(
             background, (0, 0), area=pygame.Rect(
                 0, backgroundLoc, size.x_background, scr_size))
+        screen.fill(RED,(0, 0, screen.get_width()//size.x_background_ratio, screen.get_height()), special_flags = pygame.BLEND_MULT)
         backgroundLoc -= speed
         if backgroundLoc - speed <= speed:
             backgroundLoc = size.backgroundLoc
         return screen, background, backgroundLoc
 
     def background_update_half_two(screen, background, backgroundLoc) :
-        screen.fill((80, 20, 30),(screen.get_width()//size.x_background_ratio, 0, screen.get_width()//size.x_background_ratio, screen.get_height()))
         screen.blit(
             background, (0, 0), area=pygame.Rect(
                 0, backgroundLoc, size.x_background, scr_size))
+        screen.fill(RED,(screen.get_width()//size.x_background_ratio, 0, screen.get_width()//size.x_background_ratio, screen.get_height()), special_flags = pygame.BLEND_MULT)
         backgroundLoc -= speed
         if backgroundLoc - speed <= speed:
             backgroundLoc = size.backgroundLoc

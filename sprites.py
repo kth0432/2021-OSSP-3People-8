@@ -120,7 +120,6 @@ class Bomb(pygame.sprite.Sprite):
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
         self.radius = size.radius
-        print(self.radius)
         self.radiusIncrement = size.update
         self.rect = ship.rect
 
