@@ -5,7 +5,7 @@ from collections import deque
 import sys
 import grequests
 
-from sprites import (MasterSprite, Ship, Ship2, Alien, Missile, BombPowerup,CoinPowerup,CoinTwoPowerup,
+from sprites import (MasterSprite, Ship2, Ship3, Alien, Missile, BombPowerup,CoinPowerup,CoinTwoPowerup,
                      DoublemissilePowerup, TeamshieldPowerup, Explosion, Siney, Spikey, Fasty,
                      Roundy, Crawly)
 from database import Database
@@ -42,11 +42,6 @@ class Button:
                 self.lvl_size = -2
         else:
             gameDisplay.blit(img_in,(x,y))
-    def draw(self, screen):
-        # Blit the text.
-        screen.blit(self.txt_surface, (self.rect.x+5, self.rect.y+5))
-        # Blit the rect.
-        pygame.draw.rect(screen, self.color, self.rect, 2)
 
 
 class Keyboard(object):
@@ -68,7 +63,8 @@ def main(scr, level, id, language):
     mode2_lvl_size = 1.6
 
     class size :
-        x_background = scr_size*2
+        x_background_ratio = 2
+        x_background = scr_size*x_background_ratio
         speed = scr_size*0.004
         background = scr_size*4
         backgroundLoc = scr_size*3
@@ -258,7 +254,7 @@ def main(scr, level, id, language):
     def ingame_text_update(language) :
         if language == "ENG" :
             return [font.render("Wave: " + str(wave), 1, WHITE),
-                    font.render("Aliens Left: " + str(aliensLeftThisWave), 1, WHITE),
+                    font.render("Remaining Aliens: " + str(aliensLeftThisWave), 1, WHITE),
                     font.render("Score: " + str(score), 1, WHITE),
                     font.render("Bombs: " + str(bombsHeld), 1, WHITE),
                     font.render("Coins: "+ str(coinsHeld), 1, WHITE)]
@@ -326,8 +322,8 @@ def main(scr, level, id, language):
     alienPeriod = 60 / speed
     clockTime = 60  # maximum FPS
     clock = pygame.time.Clock()
-    ship = Ship()
-    ship2 = Ship2()
+    ship = Ship2()
+    ship2 = Ship3()
     initialAlienTypes = (Siney, Spikey)
     powerupTypes = (BombPowerup, TeamshieldPowerup, DoublemissilePowerup)
     coinTypes = (CoinPowerup,CoinTwoPowerup)
@@ -427,7 +423,8 @@ def main(scr, level, id, language):
                     font.render("kill", 1, WHITE), font.render("0", 1, WHITE)],
                     font.render('ID', 1, RED),
                     font.render('PASSWORD', 1, RED),
-                    font.render('GAME OVER', 1, WHITE)]
+                    font.render('GAME OVER', 1, WHITE),
+                    font.render('SPEED UP!', 1, RED)]
 
     text_kor_set = [font2.render('게임 시작', 1, WHITE),
                     font2.render('로그인', 1, WHITE),
@@ -449,9 +446,10 @@ def main(scr, level, id, language):
                     font2.render("처치", 1, WHITE), font.render("0", 1, WHITE)],
                     font2.render('아이디', 1, RED),
                     font2.render('비밀번호', 1, RED),
-                    font2.render('게임 종료', 1, WHITE)]
+                    font2.render('게임 종료', 1, WHITE),
+                    font2.render('스피드 업!', 1, RED)]
 
-    startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts, idText, pwText, gameOverText = set_language(language)
+    startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts, idText, pwText, gameOverText, speedUpText = set_language(language)
     ### 언어 설정 끝
 
     gameOverPos = gameOverText.get_rect(center=screen.get_rect().center)
@@ -623,9 +621,9 @@ def main(scr, level, id, language):
 
     # 메인 메뉴
     while inMenu:
-        scr_x , scr_y = pygame.display.get_surface().get_size()
+        scr_x, scr_y = pygame.display.get_surface().get_size()
         if size.x_background != scr_x or scr_size != scr_y :
-            return min(scr_x, scr_y), level_size, id, language    # 메뉴화면에서만 창 사이즈 크기 확인하고, 변경되면 main 재시작
+            return min(scr_x//size.x_background_ratio, scr_y), level_size, id, language    # 메뉴화면에서만 창 사이즈 크기 확인하고, 변경되면 main 재시작
         clock.tick(clockTime)
 
         screen, background, backgroundLoc = background_update(screen, background, backgroundLoc)
@@ -767,7 +765,7 @@ def main(scr, level, id, language):
             screen.blit(title, titleRect)
 
         #Text Update
-        startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts, idText, pwText, gameOverText = set_language(language)
+        startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts, idText, pwText, gameOverText, speedUpText = set_language(language)
 
         for txt, pos in textOverlays:
             screen.blit(txt, pos)
@@ -1209,7 +1207,6 @@ def main(scr, level, id, language):
                 shopPos = shopText.get_rect(midtop=nextWaveNumPos.midbottom)
                 textposition.extend([nextWavePos, nextWaveNumPos,shopPos])
                 if wave % 4 == 0:
-                    speedUpText = font.render('SPEED UP!', 1, RED)
                     speedUpPos = speedUpText.get_rect(
                         midtop=shopPos.midbottom)
                     text.append(speedUpText)

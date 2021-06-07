@@ -42,11 +42,6 @@ class Button:
                 self.lvl_size = -2
         else:
             gameDisplay.blit(img_in,(x,y))
-    def draw(self, screen):
-        # Blit the text.
-        screen.blit(self.txt_surface, (self.rect.x+5, self.rect.y+5))
-        # Blit the rect.
-        pygame.draw.rect(screen, self.color, self.rect, 2)
 
 
 class Keyboard(object):
@@ -257,7 +252,7 @@ def main(scr, level, id, language):
     def ingame_text_update(language) :
         if language == "ENG" :
             return [font.render("Wave: " + str(wave), 1, WHITE),
-                    font.render("Aliens Left: " + str(aliensLeftThisWave), 1, WHITE),
+                    font.render("Remaining Aliens: " + str(aliensLeftThisWave), 1, WHITE),
                     font.render("Score: " + str(score), 1, WHITE),
                     font.render("Bombs: " + str(bombsHeld), 1, WHITE),
                     font.render("Coins: "+ str(coinsHeld), 1, WHITE)]
@@ -422,7 +417,8 @@ def main(scr, level, id, language):
                     font.render("kill", 1, WHITE), font.render("0", 1, WHITE)],
                     font.render('ID', 1, RED),
                     font.render('PASSWORD', 1, RED),
-                    font.render('GAME OVER', 1, WHITE)]
+                    font.render('GAME OVER', 1, WHITE),
+                    font.render('SPEED UP!', 1, RED)]
 
     text_kor_set = [font2.render('게임 시작', 1, WHITE),
                     font2.render('로그인', 1, WHITE),
@@ -444,9 +440,10 @@ def main(scr, level, id, language):
                     font2.render("처치", 1, WHITE), font.render("0", 1, WHITE)],
                     font2.render('아이디', 1, RED),
                     font2.render('비밀번호', 1, RED),
-                    font2.render('게임 종료', 1, WHITE)]
+                    font2.render('게임 종료', 1, WHITE),
+                    font2.render('스피드 업!', 1, RED)]
 
-    startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts, idText, pwText, gameOverText = set_language(language)
+    startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts, idText, pwText, gameOverText, speedUpText = set_language(language)
     ### 언어 설정 끝
 
     gameOverPos = gameOverText.get_rect(center=screen.get_rect().center)
@@ -758,7 +755,7 @@ def main(scr, level, id, language):
             screen.blit(title, titleRect)
 
         #Text Update
-        startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts, idText, pwText, gameOverText = set_language(language)
+        startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts, idText, pwText, gameOverText, speedUpText = set_language(language)
 
         for txt, pos in textOverlays:
             screen.blit(txt, pos)

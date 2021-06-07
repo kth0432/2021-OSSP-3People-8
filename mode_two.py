@@ -5,7 +5,7 @@ from collections import deque
 import sys
 import grequests
 
-from sprites import (MasterSprite, Ship3, Ship4, Alien, Missile, BombPowerup, CoinPowerup, CoinTwoPowerup,
+from sprites import (MasterSprite, Ship2, Ship3, Alien, Missile, BombPowerup, CoinPowerup, CoinTwoPowerup,
                      ShieldPowerup, DoublemissilePowerup, Explosion, Siney, Spikey, Fasty,
                      Roundy, Crawly)
 from database import Database
@@ -43,11 +43,6 @@ class Button:
                 self.lvl_size = -2
         else:
             gameDisplay.blit(img_in,(x,y))
-    def draw(self, screen, scr_size):
-        # Blit the text.
-        screen.blit(self.txt_surface, (self.rect.x + scr_size * 0.01, self.rect.y + scr_size * 0.01))
-        # Blit the rect.
-        pygame.draw.rect(screen, self.color, self.rect, scr_size * 0.01)
 
 
 class Keyboard(object):
@@ -69,7 +64,8 @@ def main(scr, level, id, language):
     mode2_lvl_size = 1.6
 
     class size :
-        x_background = scr_size*2
+        x_background_ratio = 2
+        x_background = scr_size*x_background_ratio
         speed = scr_size*0.004
         background = scr_size*4
         backgroundLoc = scr_size*3
@@ -108,7 +104,7 @@ def main(scr, level, id, language):
         buttonpos_3 = round(scr_size*0.25)
         buttonpos_4 = round(scr_size*0.1)
         button1pos_1_ad = round(x_background*0.07)
-        button2pos_1_ad = round(x_background*0.45)
+        button2pos_1_ad = round(x_background*0.42)
         button3pos_1_ad = round(x_background*0.85)
         button_ad = round(scr_size*0.896)
         lifex = scr_size * 0.86
@@ -143,18 +139,17 @@ def main(scr, level, id, language):
 
     # 인게임에서 배경색으로 플레이어 영역 구분
     def background_update_half(screen, background, backgroundLoc) :
-        
+        screen.fill((80, 20, 30),(0, 0, screen.get_width()//size.x_background_ratio, screen.get_height()))
         screen.blit(
             background, (0, 0), area=pygame.Rect(
                 0, backgroundLoc, size.x_background, scr_size))
-        screen.fill((80, 20, 30),(0, 0, screen.get_width()// 2, screen.get_height()))  
         backgroundLoc -= speed
         if backgroundLoc - speed <= speed:
             backgroundLoc = size.backgroundLoc
         return screen, background, backgroundLoc
 
     def background_update_half_two(screen, background, backgroundLoc) :
-        screen.fill((80, 20, 30),(screen.get_width()// 2, 0, screen.get_width()// 2, screen.get_height()))
+        screen.fill((80, 20, 30),(screen.get_width()//size.x_background_ratio, 0, screen.get_width()//size.x_background_ratio, screen.get_height()))
         screen.blit(
             background, (0, 0), area=pygame.Rect(
                 0, backgroundLoc, size.x_background, scr_size))
@@ -173,7 +168,7 @@ def main(scr, level, id, language):
     def ingame_text_update(language) :
         if language == "ENG" :
             return [font.render("Wave: " + str(wave), 1, WHITE),
-                    font.render("Aliens Left: " + str(aliensLeftThisWave), 1, WHITE),
+                    font.render("Remaining Aliens: " + str(aliensLeftThisWave), 1, WHITE),
                     font.render("Score: " + str(score), 1, WHITE),
                     font.render("Score: " + str(score2), 1, WHITE),
                     font.render("Bombs: " + str(bombsHeld), 1, WHITE),
@@ -240,8 +235,8 @@ def main(scr, level, id, language):
     alienPeriod = 60 / speed
     clockTime = 60  # maximum FPS
     clock = pygame.time.Clock()
-    ship = Ship3()
-    ship2 = Ship4()
+    ship = Ship2()
+    ship2 = Ship3()
     initialAlienTypes = (Siney, Spikey)
     powerupTypes = (BombPowerup, ShieldPowerup, DoublemissilePowerup)
     coinTypes = (CoinPowerup,CoinTwoPowerup)
@@ -257,6 +252,7 @@ def main(scr, level, id, language):
     Explosion.pool = pygame.sprite.Group([Explosion() for _ in range(10)])
     Explosion.active = pygame.sprite.Group()
     bombs = pygame.sprite.Group()
+    bombs2 = pygame.sprite.Group()
     powerups = pygame.sprite.Group()
     coingroup = pygame.sprite.Group()
 
@@ -277,12 +273,12 @@ def main(scr, level, id, language):
     curTime = 0
     aliensThisWave, aliensLeftThisWave, Alien.numOffScreen = 10, 10, 10
     wave = 1
-    bombsHeld = 3
+    bombsHeld = 3000
     coinsHeld = 0 # coin 구현
     doublemissile = False #doublemissile아이템이 지속되는 동안(5초) 미사일이 두배로 발사됨
     Itemdouble = False
     score = 0
-    bombsHeld2 = 3
+    bombsHeld2 = 3000
     coinsHeld2 = 0
     doublemissile2 = False
     Itemdouble2 = False
@@ -294,6 +290,7 @@ def main(scr, level, id, language):
     betweenWaveCount = betweenWaveTime
     betweenDoubleTime = 8 * clockTime
     betweenDoubleCount = betweenDoubleTime
+    betweenDoubleCount2 = betweenDoubleTime
     coinTime = 8 * clockTime # coin 구현
     coinTimeLeft = coinTime # coin 구현
     font = pygame.font.Font(None, size.font_eng)
@@ -337,7 +334,8 @@ def main(scr, level, id, language):
                     font.render('QUIT', 1, WHITE),
                     font.render('RESTART', 1, WHITE),
                     font.render('LANGUAGE', 1, WHITE),
-                    font.render('GAME OVER', 1, WHITE)]
+                    font.render('GAME OVER', 1, WHITE),
+                    font.render('SPEED UP!', 1, RED)]
 
     text_kor_set = [font2.render('게임 시작', 1, WHITE),
                     font2.render('효과음        ', 1, WHITE),
@@ -349,9 +347,10 @@ def main(scr, level, id, language):
                     font2.render('종료', 1, WHITE),
                     font2.render('다시 시작', 1, WHITE),
                     font2.render('언어', 1, WHITE),
-                    font2.render('게임 종료', 1, WHITE)]
+                    font2.render('게임 종료', 1, WHITE),
+                    font2.render('스피드 업!', 1, RED)]
 
-    startText, fxText, fxOnText, fxOffText, musicText, musicOnText, musicOffText, quitText, restartText, languageText, gameOverText = set_language(language)
+    startText, fxText, fxOnText, fxOffText, musicText, musicOnText, musicOffText, quitText, restartText, languageText, gameOverText, speedUpText = set_language(language)
     ### 언어 설정 끝
 
     startPos = startText.get_rect(midtop=titleRect.inflate(0, size.topendpos).midbottom)
@@ -367,7 +366,6 @@ def main(scr, level, id, language):
     selectText = font.render('> ', 1, WHITE)
     selectPos = selectText.get_rect(topright=startPos.topleft)
     restartPos = restartText.get_rect(bottomleft=fxPos.topleft)
-
 
     selection = 1
     soundFX = Database.getSound()
@@ -398,9 +396,9 @@ def main(scr, level, id, language):
 
     # 메인 메뉴
     while inMenu:
-        scr_x , scr_y = pygame.display.get_surface().get_size()
+        scr_x, scr_y = pygame.display.get_surface().get_size()
         if size.x_background != scr_x or scr_size != scr_y :
-            return min(scr_x, scr_y), level_size, id, language    # 메뉴화면에서만 창 사이즈 크기 확인하고, 변경되면 main 재시작
+            return min(scr_x//size.x_background_ratio, scr_y), level_size, id, language    # 메뉴화면에서만 창 사이즈 크기 확인하고, 변경되면 main 재시작
         clock.tick(clockTime)
 
         screen, background, backgroundLoc = background_update(screen, background, backgroundLoc)
@@ -460,7 +458,7 @@ def main(scr, level, id, language):
         screen.blit(title, titleRect)
 
         #Text Update
-        startText, fxText, fxOnText, fxOffText, musicText, musicOnText, musicOffText, quitText, restartText, languageText, gameOverText = set_language(language)
+        startText, fxText, fxOnText, fxOffText, musicText, musicOnText, musicOffText, quitText, restartText, languageText, gameOverText, speedUpText = set_language(language)
 
         for txt, pos in textOverlays:
             screen.blit(txt, pos)
@@ -555,7 +553,7 @@ def main(scr, level, id, language):
                 if bombsHeld2 > 0:
                     bombsHeld2 -= 1
                     newBomb = ship2.bomb()
-                    newBomb.add(bombs, alldrawings)
+                    newBomb.add(bombs2, alldrawings)
                     if soundFX:
                         bomb_sound.play()
             elif (event.type == pygame.KEYDOWN and event.key == pygame.K_l and half_tf == True):
@@ -616,17 +614,17 @@ def main(scr, level, id, language):
                             and not showAchievement):
                             selection += 1
 
-                    selectPos = selectText.get_rect(topright=menuDict[selection].topleft)
+                        selectPos = selectText.get_rect(topright=menuDict[selection].topleft)
 
-                    textOverlays = zip([restartText, fxText,
-                                        musicText, quitText, selectText,
-                                        fxOnText if soundFX else fxOffText,
-                                        musicOnText if music else musicOffText],
-                                    [restartPos, fxPos,
-                                        musicPos, quitPos, selectPos,
-                                        fxOnPos if soundFX else fxOffPos,
-                                        musicOnPos if music else musicOffPos])
-                    screen.blit(pause, pauseRect)
+                        textOverlays = zip([restartText, fxText,
+                                            musicText, quitText, selectText,
+                                            fxOnText if soundFX else fxOffText,
+                                            musicOnText if music else musicOffText],
+                                        [restartPos, fxPos,
+                                            musicPos, quitPos, selectPos,
+                                            fxOnPos if soundFX else fxOffPos,
+                                            musicOnPos if music else musicOffPos])
+                        screen.blit(pause, pauseRect)
                     
                     for txt, pos in textOverlays:
                         screen.blit(txt, pos)
@@ -640,10 +638,15 @@ def main(scr, level, id, language):
                         bomb, alien) and alien in Alien.active:
                     alien.table()
                     Explosion.position(alien.rect.center)
-                    if alien.rect.center[0] < scr_size :
-                        aliensLeftThisWave, kill_count, score = kill_alien(alien, aliensLeftThisWave, kill_count, score)
-                    else :
-                        aliensLeftThisWave, kill_count, score2 = kill_alien(alien, aliensLeftThisWave, kill_count, score2)
+                    aliensLeftThisWave, kill_count, score = kill_alien(alien, aliensLeftThisWave, kill_count, score)
+                    if soundFX:
+                        alien_explode_sound.play()
+            for bomb in bombs2:
+                if pygame.sprite.collide_circle(
+                        bomb, alien) and alien in Alien.active:
+                    alien.table()
+                    Explosion.position(alien.rect.center)
+                    aliensLeftThisWave, kill_count, score2 = kill_alien(alien, aliensLeftThisWave, kill_count, score2)
                     if soundFX:
                         alien_explode_sound.play()
             for missile in Missile.active:
@@ -782,9 +785,25 @@ def main(scr, level, id, language):
                 Itemdouble = False
                 betweenDoubleCount = betweenDoubleTime
 
+        if doublemissile2:
+            if betweenDoubleCount2 > 0:
+                betweenDoubleCount2 -= 1
+            elif betweenDoubleCount2 == 0:
+                doublemissile2 = False
+                betweenDoubleCount = betweenDoubleTime
+        if Itemdouble2:
+            if betweenDoubleCount2 > 0:
+                betweenDoubleCount2 -= 1
+            elif betweenDoubleCount2 == 0:
+                doublemissile2 = False
+                Itemdouble2 = False
+                betweenDoubleCount2 = betweenDoubleTime
+
      # Detertmine when to move to next wave
         if aliensLeftThisWave <= 0:
-            if betweenWaveCount > 0:
+            if wave == finalwave :
+                break
+            elif betweenWaveCount > 0:
                 betweenWaveCount -= 1
                 nextWaveText = font.render(
                     'Wave ' + str(wave + 1) + ' in', 1, WHITE)
@@ -796,18 +815,13 @@ def main(scr, level, id, language):
                 nextWaveNumPos = nextWaveNum.get_rect(
                     midtop=nextWavePos.midbottom)
                 textposition.extend([nextWavePos, nextWaveNumPos])
-                if wave % 4 == 0:
-                    speedUpText = font.render('SPEED UP!', 1, RED)
-                    speedUpPos = speedUpText.get_rect(
-                        midtop=nextWaveNumPos.midbottom)
-                    text.append(speedUpText)
-                    textposition.append(speedUpPos)
+                text.append(speedUpText)
+                speedUpPos = speedUpText.get_rect(midtop=nextWaveNumPos.midbottom)
+                textposition.append(speedUpPos)
             elif betweenWaveCount == 0:
                 speed += speedup
                 MasterSprite.speed = speed
-                if wave == finalwave :
-                    break
-                elif wave % 4 == 0:
+                if wave % 4 == 0:
                     ship.initializeKeys()
                     ship2.initializeKeys()
                     aliensThisWave = setaliennum

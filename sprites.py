@@ -15,7 +15,6 @@ fasty_movefunc = 3
 
 user_size, level_size, scr_size = 200, 2, 400
 main_lvl_size = 2
-x_background = 2*scr_size #협동 모드와 pvp모드에서는 가로 사이즈를 두배로
 
 class size :
     update = scr_size*0.008
@@ -28,7 +27,6 @@ class size :
 
     ratio_user = user_size*0.002
     explosion_linger = user_size*0.006
-
     x_background = scr_size*2
     right = x_background*0.6
 
@@ -39,7 +37,6 @@ def get_size(user, level) :
 
     size.update = scr_size*0.008
     size.radius = scr_size*0.04
-    size.radius2 = scr_size*0.01
     size.middle = scr_size // 2
     size.speed = scr_size*0.002
     size.masterspritespeed = scr_size*0.004
@@ -48,6 +45,8 @@ def get_size(user, level) :
 
     size.ratio_user = user_size*0.002
     size.explosion_linger = user_size*0.006
+    size.x_background = scr_size*2
+    size.right = size.x_background*0.6
 
 
 class MasterSprite(pygame.sprite.Sprite):
@@ -131,50 +130,6 @@ class Bomb(pygame.sprite.Sprite):
             pygame.display.get_surface(),
             pygame.Color(0, 0, 255, 128),
             self.rect.center, self.radius, 3)
-        if (self.rect.center[1] - self.radius <= self.area.top
-            and self.rect.center[1] + self.radius >= self.area.bottom
-            and self.rect.center[0] - self.radius <= self.area.left
-                and self.rect.center[0] + self.radius >= self.area.right):
-            self.kill()
-
-class Bomb2(pygame.sprite.Sprite):
-    def __init__(self, ship):
-        super().__init__()
-        self.image = None
-        screen = pygame.display.get_surface()
-        self.area = screen.get_rect()
-        self.radius = size.radius2
-        self.radiusIncrement = size.update
-        self.rect = ship.rect
-
-    def update(self):
-        self.radius += self.radiusIncrement
-        pygame.draw.circle(
-            pygame.display.get_surface(),
-            pygame.Color(0, 0, 255, 128),
-            self.rect.center, self.radius, 1)
-        if (self.rect.center[1] - self.radius <= self.area.top
-            and self.rect.center[1] + self.radius >= self.area.bottom
-            and self.rect.center[0] - self.radius <= self.area.left
-                and self.rect.center[0] + self.radius >= self.area.center[1]):
-            self.kill()
-
-class Bomb3(pygame.sprite.Sprite):
-    def __init__(self, ship):
-        super().__init__()
-        self.image = None
-        screen = pygame.display.get_surface()
-        self.area = screen.get_rect()
-        self.radius = size.radius2
-        self.radiusIncrement = size.update
-        self.rect = ship.rect
-
-    def update(self):
-        self.radius += self.radiusIncrement
-        pygame.draw.circle(
-            pygame.display.get_surface(),
-            pygame.Color(0, 0, 255, 128),
-            self.rect.center, self.radius, 1)
         if (self.rect.center[1] - self.radius <= self.area.top
             and self.rect.center[1] + self.radius >= self.area.bottom
             and self.rect.center[0] - self.radius <= self.area.left
@@ -373,7 +328,7 @@ class Ship2(MasterSprite):
             self.img_rect.y = y + size.lives
             surface.blit(self.image, self.img_rect)
 
-class Ship3(MasterSprite):
+class Ship2(MasterSprite):
     def __init__(self):
         super().__init__()
         self.image, self.rect = load_image('ship.png', -1)
@@ -416,12 +371,13 @@ class Ship3(MasterSprite):
 
         if self.shieldUp and self.image != self.shield:
             self.image = self.shield
+            
 
         if not self.shieldUp and self.image != self.original:
             self.image = self.original
 
     def bomb(self):
-        return Bomb2(self)
+        return Bomb(self)
 
     ## life 구현부분
     def draw_lives(self, surface, x, y):
@@ -432,7 +388,7 @@ class Ship3(MasterSprite):
             surface.blit(self.image, self.img_rect)
 
 
-class Ship4(MasterSprite):
+class Ship3(MasterSprite):
     def __init__(self):
         super().__init__()
         self.image, self.rect = load_image('ship2.png', -1)
@@ -480,7 +436,7 @@ class Ship4(MasterSprite):
             self.image = self.original
 
     def bomb(self):
-        return Bomb3(self)
+        return Bomb(self)
 
     ## life 구현부분
     def draw_lives(self, surface, x, y):
@@ -531,8 +487,8 @@ class Alien(MasterSprite):
     def update(self):
         horiz, vert = self.moveFunc()
         if level_size != main_lvl_size:
-            if horiz + self.initialRect.x > x_background:
-                horiz -= x_background + self.rect.width
+            if horiz + self.initialRect.x > size.x_background:
+                horiz -= size.x_background + self.rect.width
             elif horiz + self.initialRect.x < 0 - self.rect.width:
                 horiz += scr_size + self.rect.width
         else :
