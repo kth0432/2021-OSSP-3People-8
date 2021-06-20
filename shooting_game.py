@@ -28,7 +28,6 @@ GREEN= (0, 255, 0)
 url = "http://osspcshooting.shop"
 
 class Button:
-
     def __init__(self, gameDisplay,img_in, x, y, width, height, img_act, x_act, y_act, action = None):
         self.lvl_size = 0
         mouse = pygame.mouse.get_pos()
@@ -60,11 +59,6 @@ class Keyboard(object):
             pygame.K_q: 'Q', pygame.K_r: 'R', pygame.K_s: 'S', pygame.K_t: 'T',
             pygame.K_u: 'U', pygame.K_v: 'V', pygame.K_w: 'W', pygame.K_x: 'X',
             pygame.K_y: 'Y', pygame.K_z: 'Z'}
-
-
-############################
-
-
 
 def main(scr, level, id, language):
     scr_size, level_size = scr, level
@@ -165,7 +159,6 @@ def main(scr, level, id, language):
         size.lifex = scr_size * 0.82
         size.lifey = scr_size * 0.02
 
-        ### resize
     def resize(x, y, level_size) :
 
         scr_size = min(x, y)
@@ -177,7 +170,7 @@ def main(scr, level, id, language):
         time.sleep(0.1) # 과도한 리사이즈(초당 60번)를 하지 않도록 함
 
         screen = pygame.display.set_mode((scr_size, scr_size), pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.RESIZABLE)
-        
+
         background = pygame.Surface((scr_size, size.background))
         background = background.convert()
         background.fill(BLACK)
@@ -195,7 +188,7 @@ def main(scr, level, id, language):
             x, y, starsize = finalStars.pop()
             pygame.draw.rect(
                 background, RED, pygame.Rect(x, y, starsize, starsize))
-            
+
         font = pygame.font.Font(None, size.font_eng)
         font2 = pygame.font.SysFont('nanumgothic', size.font_kor)
 
@@ -251,7 +244,7 @@ def main(scr, level, id, language):
                         font2.render('아이디', 1, RED),
                         font2.render('비밀번호', 1, RED),
                         font2.render('게임 종료', 1, WHITE)]
-                
+
         startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts, idText, pwText, gameOverText = set_language(language)
 
         gameOverPos = gameOverText.get_rect(center=screen.get_rect().center)
@@ -355,6 +348,13 @@ def main(scr, level, id, language):
         selectItemPos.centerx = size.coinxonepos
         selectItemPos.centery = size.coinypose
 
+        shoot_img = []
+        shoot_rect = []
+        kill_img = []
+        kill_rect = []
+        shoot_imgset = ['shoot_10.png', 'shoot_100.png', 'shoot_1000.png']
+        kill_imgset = ['kill_10.png', 'kill_100.png', 'kill_1000.png']
+
         for i in range(len(shoot_imgset)) :
             img, rec = load_image(shoot_imgset[i])
             shoot_img.append(img)
@@ -373,8 +373,13 @@ def main(scr, level, id, language):
             kill_rect[i].centerx = size.achievementpos * achievement_posx(i)
             kill_rect[i].centery = size.achievementpos + size.achievementpos * achievement_posy(i)
 
-        return scr_size, user_size, screen, background, backgroundLoc, finalStars, font, font2, gameOverPos, gameOverText, title, titleRect, pause, pauseRect, text_eng_set, text_kor_set, startPos, startText, fxPos, fxOnPos, fxOffPos, musicPos, achievementPos, musicOnPos, musicOffPos, quitPos, languagePos, selectText, selectPos, restartPos, achievePos, next, nextRect, continue_img,continueRect, bomb_img,bombRect, shield_img,shieldRect, shield_on_img,shieldOnRect, double_img,doubleRect, double_on_img,doubleOnRect, continueText, continuePos, bombText_Item, bombItemPos, shieldText, shieldPos, doubleText, doublePos, selectItem, selectItemPos
+        if id != '':
+            menuDict = {1: startPos, 2: hiScorePos, 3: fxPos, 4: musicPos, 5: achievementPos , 6: quitPos, 7: languagePos, 8: logoutPos}
+        else :
+            menuDict = {1: startPos, 2: loginPos, 3: createaccountPos, 4: hiScorePos, 5: fxPos, 6: musicPos, 7: quitPos, 8: languagePos}
 
+
+        return scr_size, user_size, screen, background, backgroundLoc, finalStars, font, font2, gameOverPos, gameOverText, title, titleRect, pause, pauseRect, text_eng_set, text_kor_set, startPos, startText, fxPos, fxOnPos, fxOffPos, musicPos, achievementPos, musicOnPos, musicOffPos, quitPos, languagePos, selectText, selectPos, restartPos, achievePos, next, nextRect, continue_img,continueRect, bomb_img,bombRect, shield_img,shieldRect, shield_on_img,shieldOnRect, double_img,doubleRect, double_on_img,doubleOnRect, continueText, continuePos, bombText_Item, bombItemPos, shieldText, shieldPos, doubleText, doublePos, selectItem, selectItemPos, hiScorePos, menuDict
 
 
     def achievement_posx(i) :
@@ -580,7 +585,6 @@ def main(scr, level, id, language):
 # Display the background
     screen.blit(background, (0, 0))
     pygame.display.flip()
-
 
 # Prepare game objects
     speed = 1.5
@@ -1042,12 +1046,14 @@ def main(scr, level, id, language):
         #여기까지 버튼 구현size.button_ad
 
     while ship.alive:
+
         # resize
         scr_x , scr_y = pygame.display.get_surface().get_size()
         if scr_size != scr_x or scr_size != scr_y :
             prev_scr_size = scr_size
-            scr_size, user_size, screen, background, backgroundLoc, finalStars, font, font2, gameOverPos, gameOverText, title, titleRect, pause, pauseRect, text_eng_set, text_kor_set, startPos, startText, fxPos, fxOnPos, fxOffPos, musicPos, achievementPos, musicOnPos, musicOffPos, quitPos, languagePos, selectText, selectPos, restartPos, achievePos, next, nextRect, continue_img,continueRect, bomb_img,bombRect, shield_img,shieldRect, shield_on_img,shieldOnRect, double_img,doubleRect, double_on_img,doubleOnRect, continueText, continuePos, bombText_Item, bombItemPos, shieldText, shieldPos, doubleText, doublePos, selectItem, selectItemPos = resize(scr_x, scr_y, main_lvl_size)
+            scr_size, user_size, screen, background, backgroundLoc, finalStars, font, font2, gameOverPos, gameOverText, title, titleRect, pause, pauseRect, text_eng_set, text_kor_set, startPos, startText, fxPos, fxOnPos, fxOffPos, musicPos, achievementPos, musicOnPos, musicOffPos, quitPos, languagePos, selectText, selectPos, restartPos, achievePos, next, nextRect, continue_img,continueRect, bomb_img,bombRect, shield_img,shieldRect, shield_on_img,shieldOnRect, double_img,doubleRect, double_on_img,doubleOnRect, continueText, continuePos, bombText_Item, bombItemPos, shieldText, shieldPos, doubleText, doublePos, selectItem, selectItemPos, hiScorePos, menuDict = resize(scr_x, scr_y, main_lvl_size)
             shipx, shipy = ship.rect[0] * scr_size / prev_scr_size, ship.rect[1] * scr_size / prev_scr_size
+            shipspeed = ship.speed
 
             Alien.pool = pygame.sprite.Group([alien() for alien in initialAlienTypes for _ in range(5)])
             powerupTypes = (BombPowerup, ShieldPowerup, DoublemissilePowerup)
@@ -1063,13 +1069,13 @@ def main(scr, level, id, language):
                 i.screen = pygame.display.get_surface()
                 i.area = ship.screen.get_rect()
 
+            ship.speed = round(shipspeed * scr_size / prev_scr_size)
             ship.shield = pygame.transform.scale(ship.shield, (round(ship.shield.get_width()* scr_size / prev_scr_size), round(ship.shield.get_height()*scr_size / prev_scr_size)))
             ship.rect[0], ship.rect[1] = shipx, shipy
             ship.original = ship.image
             ship.radius = max(ship.rect.width, ship.rect.height)
-            
         # resize
-        
+
         clock.tick(clockTime)
 
         if aliensLeftThisWave >= aliennum:
@@ -1128,6 +1134,41 @@ def main(scr, level, id, language):
                     menuDict = {1: restartPos, 2: hiScorePos, 3: fxPos, 4: musicPos, 5: quitPos}
                 selectPos = selectText.get_rect(topright=restartPos.topleft)
                 while inPmenu:
+
+                    # resize
+                    scr_x , scr_y = pygame.display.get_surface().get_size()
+                    if scr_size != scr_x or scr_size != scr_y :
+                        prev_scr_size = scr_size
+                        scr_size, user_size, screen, background, backgroundLoc, finalStars, font, font2, gameOverPos, gameOverText, title, titleRect, pause, pauseRect, text_eng_set, text_kor_set, startPos, startText, fxPos, fxOnPos, fxOffPos, musicPos, achievementPos, musicOnPos, musicOffPos, quitPos, languagePos, selectText, selectPos, restartPos, achievePos, next, nextRect, continue_img,continueRect, bomb_img,bombRect, shield_img,shieldRect, shield_on_img,shieldOnRect, double_img,doubleRect, double_on_img,doubleOnRect, continueText, continuePos, bombText_Item, bombItemPos, shieldText, shieldPos, doubleText, doublePos, selectItem, selectItemPos, hiScorePos, menuDict = resize(scr_x, scr_y, main_lvl_size)
+                        shipx, shipy = ship.rect[0] * scr_size / prev_scr_size, ship.rect[1] * scr_size / prev_scr_size
+                        shipspeed = ship.speed
+
+                        Alien.pool = pygame.sprite.Group([alien() for alien in initialAlienTypes for _ in range(5)])
+                        powerupTypes = (BombPowerup, ShieldPowerup, DoublemissilePowerup)
+                        coinTypes = (CoinPowerup,CoinTwoPowerup)
+                        Missile.pool = pygame.sprite.Group([Missile() for _ in range(10)])
+                        Explosion.pool = pygame.sprite.Group([Explosion() for _ in range(10)])
+
+                        for i in allsprites.sprites() :
+                            for j in i.rect :
+                                j = j * scr_size / prev_scr_size
+                            i.image = pygame.transform.scale(i.image, (round(i.image.get_width()* scr_size / prev_scr_size), round(i.image.get_height()*scr_size / prev_scr_size)))
+                            i.rect = pygame.Rect(0, 0, i.image.get_width(), i.image.get_height())
+                            i.screen = pygame.display.get_surface()
+                            i.area = ship.screen.get_rect()
+
+                        ship.speed = round(shipspeed * scr_size / prev_scr_size)
+                        ship.shield = pygame.transform.scale(ship.shield, (round(ship.shield.get_width()* scr_size / prev_scr_size), round(ship.shield.get_height()*scr_size / prev_scr_size)))
+                        ship.rect[0], ship.rect[1] = shipx, shipy
+                        ship.original = ship.image
+                        ship.radius = max(ship.rect.width, ship.rect.height)
+
+                    if id != '':
+                        menuDict = {1: restartPos, 2: hiScorePos, 3: fxPos, 4: musicPos, 5: achievementPos , 6: quitPos}
+                    else:
+                        menuDict = {1: restartPos, 2: hiScorePos, 3: fxPos, 4: musicPos, 5: quitPos}
+                    # resize
+
                     clock.tick(clockTime)
                     screen, background, backgroundLoc = background_update(screen, background, backgroundLoc)
 
@@ -1230,6 +1271,35 @@ def main(scr, level, id, language):
                 shield_on = False
                 double_on = False
                 while inCoin:
+
+                    # resize
+                    scr_x , scr_y = pygame.display.get_surface().get_size()
+                    if scr_size != scr_x or scr_size != scr_y :
+                        prev_scr_size = scr_size
+                        scr_size, user_size, screen, background, backgroundLoc, finalStars, font, font2, gameOverPos, gameOverText, title, titleRect, pause, pauseRect, text_eng_set, text_kor_set, startPos, startText, fxPos, fxOnPos, fxOffPos, musicPos, achievementPos, musicOnPos, musicOffPos, quitPos, languagePos, selectText, selectPos, restartPos, achievePos, next, nextRect, continue_img,continueRect, bomb_img,bombRect, shield_img,shieldRect, shield_on_img,shieldOnRect, double_img,doubleRect, double_on_img,doubleOnRect, continueText, continuePos, bombText_Item, bombItemPos, shieldText, shieldPos, doubleText, doublePos, selectItem, selectItemPos, hiScorePos, menuDict = resize(scr_x, scr_y, main_lvl_size)
+                        shipx, shipy = ship.rect[0] * scr_size / prev_scr_size, ship.rect[1] * scr_size / prev_scr_size
+                        shipspeed = ship.speed
+
+                        Alien.pool = pygame.sprite.Group([alien() for alien in initialAlienTypes for _ in range(5)])
+                        powerupTypes = (BombPowerup, ShieldPowerup, DoublemissilePowerup)
+                        coinTypes = (CoinPowerup,CoinTwoPowerup)
+                        Missile.pool = pygame.sprite.Group([Missile() for _ in range(10)])
+                        Explosion.pool = pygame.sprite.Group([Explosion() for _ in range(10)])
+
+                        for i in allsprites.sprites() :
+                            for j in i.rect :
+                                j = j * scr_size / prev_scr_size
+                            i.image = pygame.transform.scale(i.image, (round(i.image.get_width()* scr_size / prev_scr_size), round(i.image.get_height()*scr_size / prev_scr_size)))
+                            i.rect = pygame.Rect(0, 0, i.image.get_width(), i.image.get_height())
+                            i.screen = pygame.display.get_surface()
+                            i.area = ship.screen.get_rect()
+
+                        ship.speed = round(shipspeed * scr_size / prev_scr_size)
+                        ship.shield = pygame.transform.scale(ship.shield, (round(ship.shield.get_width()* scr_size / prev_scr_size), round(ship.shield.get_height()*scr_size / prev_scr_size)))
+                        ship.rect[0], ship.rect[1] = shipx, shipy
+                        ship.original = ship.image
+                        ship.radius = max(ship.rect.width, ship.rect.height)
+                    # resize
 
                     clock.tick(clockTime)
                     bombCoinText = font.render("Bombs: " + str(bombsHeld), 1, WHITE)
@@ -1463,6 +1533,7 @@ def main(scr, level, id, language):
                                         musicPos, achievementPos, quitPos, selectPos,
                                         fxOnPos if soundFX else fxOffPos,
                                         musicOnPos if music else musicOffPos])
+                    screen.blit(pause, titleRect)
                 for txt, pos in textOverlays:
                     screen.blit(txt, pos)
                 pygame.display.flip()
@@ -1492,6 +1563,35 @@ def main(scr, level, id, language):
     is_input_id = True
 
     while True:
+
+        # resize
+        scr_x , scr_y = pygame.display.get_surface().get_size()
+        if scr_size != scr_x or scr_size != scr_y :
+            prev_scr_size = scr_size
+            scr_size, user_size, screen, background, backgroundLoc, finalStars, font, font2, gameOverPos, gameOverText, title, titleRect, pause, pauseRect, text_eng_set, text_kor_set, startPos, startText, fxPos, fxOnPos, fxOffPos, musicPos, achievementPos, musicOnPos, musicOffPos, quitPos, languagePos, selectText, selectPos, restartPos, achievePos, next, nextRect, continue_img,continueRect, bomb_img,bombRect, shield_img,shieldRect, shield_on_img,shieldOnRect, double_img,doubleRect, double_on_img,doubleOnRect, continueText, continuePos, bombText_Item, bombItemPos, shieldText, shieldPos, doubleText, doublePos, selectItem, selectItemPos, hiScorePos, menuDict = resize(scr_x, scr_y, main_lvl_size)
+            shipx, shipy = ship.rect[0] * scr_size / prev_scr_size, ship.rect[1] * scr_size / prev_scr_size
+            shipspeed = ship.speed
+
+            Alien.pool = pygame.sprite.Group([alien() for alien in initialAlienTypes for _ in range(5)])
+            powerupTypes = (BombPowerup, ShieldPowerup, DoublemissilePowerup)
+            coinTypes = (CoinPowerup,CoinTwoPowerup)
+            Missile.pool = pygame.sprite.Group([Missile() for _ in range(10)])
+            Explosion.pool = pygame.sprite.Group([Explosion() for _ in range(10)])
+
+            for i in allsprites.sprites() :
+                for j in i.rect :
+                    j = j * scr_size / prev_scr_size
+                i.image = pygame.transform.scale(i.image, (round(i.image.get_width()* scr_size / prev_scr_size), round(i.image.get_height()*scr_size / prev_scr_size)))
+                i.rect = pygame.Rect(0, 0, i.image.get_width(), i.image.get_height())
+                i.screen = pygame.display.get_surface()
+                i.area = ship.screen.get_rect()
+
+            ship.speed = round(shipspeed * scr_size / prev_scr_size)
+            ship.shield = pygame.transform.scale(ship.shield, (round(ship.shield.get_width()* scr_size / prev_scr_size), round(ship.shield.get_height()*scr_size / prev_scr_size)))
+            ship.rect[0], ship.rect[1] = shipx, shipy
+            ship.original = ship.image
+            ship.radius = max(ship.rect.width, ship.rect.height)
+        # resize
 
         clock.tick(clockTime)
         # login event handling

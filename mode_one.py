@@ -4,8 +4,10 @@ import random
 from collections import deque
 import sys
 import grequests
+import time
 
-from sprites import (MasterSprite, Ship2, Ship3, Alien, Missile, BombPowerup,CoinPowerup,CoinTwoPowerup,
+import sprites
+from sprites import (MasterSprite, Ship4, Ship5, Alien, Missile, BombPowerup,CoinPowerup,CoinTwoPowerup,
                      DoublemissilePowerup, TeamshieldPowerup, Explosion, Siney, Spikey, Fasty,
                      Roundy, Crawly)
 from database import Database
@@ -72,7 +74,7 @@ def main(scr, level, id, language):
         star_s = round(scr_size*0.004)
         star_l = round(scr_size*0.01)
         font_eng = round(scr_size*0.065)
-        font_kor =  round(scr_size*0.045)
+        font_kor =  round(scr_size*0.040)
         toppos = scr_size*0.2
         coinnextx = scr_size*0.005
         coinnexty = scr_size*0.004
@@ -107,7 +109,278 @@ def main(scr, level, id, language):
         button3pos_1_ad = round(x_background*0.85)
         button_ad = round(scr_size*0.896)
         lifex = x_background * 0.92
-        lifey = x_background * 0.02
+        lifey = x_background * 0.01
+
+    def set_size(scr_size) :
+        size.x_background = scr_size*size.x_background_ratio
+        size.speed = scr_size*0.004
+        size.background = scr_size*4
+        size.backgroundLoc = scr_size*3
+        size.star_seq = round(scr_size*0.06)
+        size.star_s = round(scr_size*0.004)
+        size.star_l = round(scr_size*0.01)
+        size.font_eng = round(scr_size*0.065)
+        size.font_kor =  round(scr_size*0.040)
+        size.toppos = scr_size*0.2
+        size.coinnextx = scr_size*0.005
+        size.coinnexty = scr_size*0.004
+        size.ratio = scr_size*0.002
+        size.middletoppos = scr_size*0.35
+        size.topendpos = scr_size*0.15
+        size.middlepos = size.x_background*0.5
+        size.cointoppos = scr_size*0.25
+        size.coinpos = scr_size*0.7
+        size.coinxonepos = size.x_background*0.2
+        size.coinxtwopos = size.x_background*0.4
+        size.coinxthreepos = size.x_background*0.6
+        size.coinxfourpos = size.x_background*0.8
+        size.coinypose = scr_size*0.8
+        size.achievement = scr_size/3000
+        size.achievementpos = scr_size*0.25
+        size.hi_achievement = scr_size*0.0001
+        size.hi_achievementx = scr_size*0.3
+        size.hi_achievementx2 = scr_size*0.35
+        size.hi_achievementy = scr_size*0.16
+        size.hi_achievementy_seq = scr_size*0.043
+        size.selectitemposx = scr_size*0.2
+        size.selectitemposy = scr_size*0.5
+        size.button1pos_1 = round(size.x_background*0.08)
+        size.button2pos_1 = round(size.x_background*0.48)
+        size.button3pos_1 = round(size.x_background*0.86)
+        size.buttonpos_2 = round(scr_size*0.9)
+        size.buttonpos_3 = round(scr_size*0.25)
+        size.buttonpos_4 = round(scr_size*0.1)
+        size.button1pos_1_ad = round(size.x_background*0.07)
+        size.button2pos_1_ad = round(size.x_background*0.45)
+        size.button3pos_1_ad = round(size.x_background*0.85)
+        size.button_ad = round(size.x_background*0.896)
+        size.lifex = size.x_background * 0.92
+        size.lifey = size.x_background * 0.01
+
+    def resize(x, y, level_size) :
+
+        scr_size = min(x//size.x_background_ratio, y)
+        if scr_size < 300 :
+            scr_size = 300
+        user_size = round(scr_size / level_size)
+        set_size(scr_size)
+        sprites.get_size(user_size, level_size)
+        time.sleep(0.1) # 과도한 리사이즈(초당 60번)를 하지 않도록 함
+
+        screen = pygame.display.set_mode((size.x_background, scr_size), pygame.HWSURFACE|pygame.DOUBLEBUF|pygame.RESIZABLE)
+
+        background = pygame.Surface((size.x_background, size.background))
+        background = background.convert()
+        background.fill(BLACK)
+
+        backgroundLoc = size.backgroundLoc
+        finalStars = deque()
+        for y in range(0, size.backgroundLoc, size.star_seq):
+            starsize = random.randint(size.star_s, size.star_l)
+            x = random.randint(0, size.x_background - starsize)
+            if y <= scr_size:
+                finalStars.appendleft((x, y + size.backgroundLoc, starsize))
+            pygame.draw.rect(
+                background, RED, pygame.Rect(x, y, starsize, starsize))
+        while finalStars:
+            x, y, starsize = finalStars.pop()
+            pygame.draw.rect(
+                background, RED, pygame.Rect(x, y, starsize, starsize))
+
+        font = pygame.font.Font(None, size.font_eng)
+        font2 = pygame.font.SysFont('nanumgothic', size.font_kor)
+
+        title, titleRect = load_image('title.png')
+        title = pygame.transform.scale(title, (round(title.get_width()*size.ratio), round(title.get_height()*size.ratio)))
+        titleRect = pygame.Rect(0, 0, title.get_width(), title.get_height())
+        pause,pauseRect = load_image('pause.png',WHITE)
+        pause = pygame.transform.scale(pause, (round(pause.get_width()*size.ratio), round(pause.get_height()*size.ratio)))
+        pauseRect = pygame.Rect(0, 0, pause.get_width(), pause.get_height())
+        titleRect.midtop = screen.get_rect().inflate(0, -size.middletoppos).midtop
+        pauseRect.midtop = screen.get_rect().inflate(0, -size.middletoppos).midtop
+
+        text_eng_set = [font.render('START GAME', 1, WHITE),
+                        font.render('LOGIN', 1, WHITE),
+                        font.render('HIGH SCORES', 1, WHITE),
+                        font.render('CREATE ACCOUNT', 1, WHITE),
+                        font.render('SOUND FX', 1, WHITE),
+                        font.render('   ON', 1, RED),
+                        font.render('   OFF', 1, RED),
+                        font.render('MUSIC', 1, WHITE),
+                        font.render('ACHIEVEMENTS', 1, WHITE),
+                        font.render('   ON', 1, RED),
+                        font.render('   OFF', 1, RED),
+                        font.render('QUIT', 1, WHITE),
+                        font.render('RESTART', 1, WHITE),
+                        font.render('LANGUAGE', 1, WHITE),
+                        font.render('LOGOUT', 1, WHITE),
+                        [font.render("ACHIEVEMENT NAME", 1, RED), font.render("Progress", 1, RED),
+                        font.render("shoot", 1, WHITE), font.render("0", 1, WHITE),
+                        font.render("kill", 1, WHITE), font.render("0", 1, WHITE)],
+                        font.render('ID', 1, RED),
+                        font.render('PASSWORD', 1, RED),
+                        font.render('GAME OVER', 1, WHITE),
+                        font.render('SPEED UP!', 1, RED)]
+
+        text_kor_set = [font2.render('게임 시작', 1, WHITE),
+                        font2.render('로그인', 1, WHITE),
+                        font2.render('최고 점수', 1, WHITE),
+                        font2.render('계정 생성', 1, WHITE),
+                        font2.render('효과음        ', 1, WHITE),
+                        font2.render('켜짐      ', 1, RED),
+                        font2.render('꺼짐', 1, RED),
+                        font2.render('음악', 1, WHITE),
+                        font2.render('업적', 1, WHITE),
+                        font2.render('켜짐', 1, RED),
+                        font2.render('꺼짐', 1, RED),
+                        font2.render('종료', 1, WHITE),
+                        font2.render('다시 시작', 1, WHITE),
+                        font2.render('언어', 1, WHITE),
+                        font2.render('로그아웃', 1, WHITE),
+                        [font2.render("업적 이름", 1, RED), font2.render("진행률", 1, RED),
+                        font2.render("미사일", 1, WHITE), font.render("0", 1, WHITE),
+                        font2.render("처치", 1, WHITE), font.render("0", 1, WHITE)],
+                        font2.render('아이디', 1, RED),
+                        font2.render('비밀번호', 1, RED),
+                        font2.render('게임 종료', 1, WHITE),
+                        font2.render('스피드 업!', 1, RED)]
+
+        startText, loginText, hiScoreText, createaccountText, fxText, fxOnText, fxOffText, musicText, achievementText, musicOnText, musicOffText, quitText, restartText, languageText, logoutText, achieveTexts, idText, pwText, gameOverText, speedUpText = set_language(language)
+
+        gameOverPos = gameOverText.get_rect(center=screen.get_rect().center)
+
+        startPos = startText.get_rect(midtop=titleRect.inflate(0, size.topendpos).midbottom)
+        loginPos = loginText.get_rect(topleft=startPos.bottomleft)
+        createaccountPos = createaccountText.get_rect(topleft=loginPos.bottomleft)
+        if id == '' :
+            hiScorePos = hiScoreText.get_rect(topleft=createaccountPos.bottomleft)
+        else :
+            hiScorePos = hiScoreText.get_rect(topleft=startPos.bottomleft)
+        fxPos = fxText.get_rect(topleft=hiScorePos.bottomleft)
+        fxOnPos = fxOnText.get_rect(topleft=fxPos.topright)
+        fxOffPos = fxOffText.get_rect(topleft=fxPos.topright)
+        musicPos = fxText.get_rect(topleft=fxPos.bottomleft)
+        achievementPos = achievementText.get_rect(topleft=musicPos.bottomleft)
+        musicOnPos = musicOnText.get_rect(topleft=musicPos.topright)
+        musicOffPos = musicOffText.get_rect(topleft=musicPos.topright)
+        if id == '':
+            quitPos = quitText.get_rect(topleft=musicPos.bottomleft)
+        else:
+            quitPos = quitText.get_rect(topleft=achievementPos.bottomleft)
+        languagePos = languageText.get_rect(topleft=quitPos.bottomleft)
+        logoutPos = logoutText.get_rect(topleft=languagePos.bottomleft)
+
+        selectText = font.render('> ', 1, WHITE)
+        selectPos = selectText.get_rect(topright=startPos.topleft)
+        restartPos = restartText.get_rect(bottomleft=hiScorePos.topleft)
+
+        achievePos = [achieveTexts[0].get_rect(
+                        topleft=screen.get_rect().inflate(-size.toppos, -size.toppos).topleft),
+                    achieveTexts[1].get_rect(
+                        topright=screen.get_rect().inflate(-size.toppos, -size.toppos).topright)]
+        for i in range(4) :
+            achievePos.append(achieveTexts[i].get_rect(topleft=achievePos[i].bottomleft))
+
+        next,nextRect = load_image('next.png',WHITE)
+        next = pygame.transform.scale(next, (round(next.get_width()*size.coinnextx), round(next.get_height()*size.coinnexty)))
+        nextRect = pygame.Rect(0, 0, next.get_width(), next.get_height())
+        nextRect.centerx = size.middlepos
+        nextRect.centery = size.cointoppos
+
+        continue_img,continueRect = load_image('continue.png',WHITE)
+        continue_img = pygame.transform.scale(continue_img, (round(continue_img.get_width()*size.ratio), round(continue_img.get_height()*size.ratio)))
+        continueRect = pygame.Rect(0, 0, continue_img.get_width(), continue_img.get_height())
+        continueRect.centerx = size.coinxonepos
+        continueRect.centery = size.coinpos
+
+        bomb_img,bombRect = load_image('bomb_click.png')
+        bomb_img = pygame.transform.scale(bomb_img, (round(bomb_img.get_width()*size.ratio), round(bomb_img.get_height()*size.ratio)))
+        bombRect = pygame.Rect(0, 0, bomb_img.get_width(), bomb_img.get_height())
+        bombRect.centerx = size.coinxtwopos
+        bombRect.centery = size.coinpos
+
+        shield_img,shieldRect = load_image('shield_click.png')
+        shield_img = pygame.transform.scale(shield_img, (round(shield_img.get_width()*size.ratio), round(shield_img.get_height()*size.ratio)))
+        shieldRect = pygame.Rect(0, 0, shield_img.get_width(), shield_img.get_height())
+        shieldRect.centerx = size.coinxthreepos
+        shieldRect.centery = size.coinpos
+
+        shield_on_img,shieldOnRect = load_image('ship_shield.png')
+        shield_on_img = pygame.transform.scale(shield_on_img, (round(shield_on_img.get_width()*size.ratio), round(shield_on_img.get_height()*size.ratio)))
+        shieldOnRect = pygame.Rect(0, 0, shield_on_img.get_width(), shield_on_img.get_height())
+        shieldOnRect.centerx = size.coinxthreepos
+        shieldOnRect.centery = size.coinpos
+
+        double_img,doubleRect = load_image('doublemissile_powerup.png')
+        double_img = pygame.transform.scale(double_img, (round(double_img.get_width()*size.ratio), round(double_img.get_height()*size.ratio)))
+        doubleRect = pygame.Rect(0, 0, double_img.get_width(), double_img.get_height())
+        doubleRect.centerx = size.coinxfourpos
+        doubleRect.centery = size.coinpos
+
+        double_on_img,doubleOnRect = load_image('doublemissile_click.png')
+        double_on_img = pygame.transform.scale(double_on_img, (round(double_on_img.get_width()*size.ratio), round(double_on_img.get_height()*size.ratio)))
+        doubleOnRect = pygame.Rect(0, 0, double_on_img.get_width(), double_on_img.get_height())
+        doubleOnRect.centerx = size.coinxfourpos
+        doubleOnRect.centery = size.coinpos
+
+        continueText = font.render('Continue',1,WHITE)
+        continuePos = pygame.Rect(0,0,continueText.get_width(), continueText.get_height())
+        continuePos.centerx = size.coinxonepos
+        continuePos.centery = size.coinypose
+
+        bombText_Item = font.render('Bomb',1,WHITE)
+        bombItemPos = pygame.Rect(0,0,bombText_Item.get_width(), bombText_Item.get_height())
+        bombItemPos.centerx = size.coinxtwopos
+        bombItemPos.centery = size.coinypose
+
+        shieldText = font.render('Shield',1,WHITE)
+        shieldPos = pygame.Rect(0,0,shieldText.get_width(), shieldText.get_height())
+        shieldPos.centerx = size.coinxthreepos
+        shieldPos.centery = size.coinypose
+
+        doubleText = font.render('Double',1,WHITE)
+        doublePos = pygame.Rect(0,0,doubleText.get_width(), doubleText.get_height())
+        doublePos.centerx = size.coinxfourpos
+        doublePos.centery = size.coinypose
+
+        selectItem = font.render('^',1,WHITE)
+        selectItemPos = pygame.Rect(0,0,selectItem.get_width(), selectItem.get_height())
+        selectItemPos.centerx = size.coinxonepos
+        selectItemPos.centery = size.coinypose
+
+        shoot_img = []
+        shoot_rect = []
+        kill_img = []
+        kill_rect = []
+        shoot_imgset = ['shoot_10.png', 'shoot_100.png', 'shoot_1000.png']
+        kill_imgset = ['kill_10.png', 'kill_100.png', 'kill_1000.png']
+
+        for i in range(len(shoot_imgset)) :
+            img, rec = load_image(shoot_imgset[i])
+            shoot_img.append(img)
+            shoot_rect.append(rec)
+            shoot_img[i] = pygame.transform.scale(shoot_img[i], (round(shoot_img[i].get_width()*size.achievement), round(shoot_img[i].get_height()*size.achievement)))
+            shoot_rect[i] = pygame.Rect(0, 0, shoot_img[i].get_width(), shoot_img[i].get_height())
+            shoot_rect[i].centerx = size.achievementpos * achievement_posx(i)
+            shoot_rect[i].centery = size.achievementpos * achievement_posy(i)
+
+        for i in range(len(kill_imgset)) :
+            img, rec = load_image(kill_imgset[i])
+            kill_img.append(img)
+            kill_rect.append(rec)
+            kill_img[i] = pygame.transform.scale(kill_img[i], (round(kill_img[i].get_width()*size.achievement), round(kill_img[i].get_height()*size.achievement)))
+            kill_rect[i] = pygame.Rect(0, 0, kill_img[i].get_width(), kill_img[i].get_height())
+            kill_rect[i].centerx = size.achievementpos * achievement_posx(i)
+            kill_rect[i].centery = size.achievementpos + size.achievementpos * achievement_posy(i)
+
+        if id != '':
+            menuDict = {1: startPos, 2: hiScorePos, 3: fxPos, 4: musicPos, 5: achievementPos , 6: quitPos, 7: languagePos, 8: logoutPos}
+        else :
+            menuDict = {1: startPos, 2: loginPos, 3: createaccountPos, 4: hiScorePos, 5: fxPos, 6: musicPos, 7: quitPos, 8: languagePos}
+
+
+        return scr_size, user_size, screen, background, backgroundLoc, finalStars, font, font2, gameOverPos, gameOverText, title, titleRect, pause, pauseRect, text_eng_set, text_kor_set, startPos, startText, fxPos, fxOnPos, fxOffPos, musicPos, achievementPos, musicOnPos, musicOffPos, quitPos, languagePos, selectText, selectPos, restartPos, achievePos, next, nextRect, continue_img,continueRect, bomb_img,bombRect, shield_img,shieldRect, shield_on_img,shieldOnRect, double_img,doubleRect, double_on_img,doubleOnRect, continueText, continuePos, bombText_Item, bombItemPos, shieldText, shieldPos, doubleText, doublePos, selectItem, selectItemPos, hiScorePos, menuDict
+
 
     def achievement_posx(i) :
         return 1 + i%3
@@ -154,14 +427,15 @@ def main(scr, level, id, language):
 
 
     def get_hiscores(highScoreTexts, highScorePos) :
-        req = grequests.get(url + '/get_record/')
+        req = grequests.get(url + '/get_record_coop/')
         res = grequests.map([req])
         Scores = res[0].content.decode()[1:-1].split(',')
         hiScores = []
         for i in range(len(Scores)) :
-            if i % 3 == 0 : score_id = Scores[i][2:-1]
-            elif i % 3 == 1 : score_score = int(Scores[i][:])
-            elif i % 3 == 2:
+            if i % 4 == 0 : score_id = Scores[i][2:-1] + ', '
+            elif i % 4 == 1 : score_id += Scores[i][1:-1]
+            elif i % 4 == 2 : score_score = int(Scores[i][:])
+            elif i % 4 == 3:
                 score_accuracy = round(float(Scores[i][:-1])*100, 2)
                 hiScores.append([score_id, score_score, str(score_accuracy)+"%"])
         hiScores = remove_id_overlap(hiScores)
@@ -175,14 +449,15 @@ def main(scr, level, id, language):
             topleft=highScorePos[x].bottomleft) for x in range(-3, 0)])
         showHiScores = True
 
-        req = grequests.get(url + '/get_achievementlist/')
+        req = grequests.get(url + '/get_achievementlist_coop/')
         res = grequests.map([req])
         achievement = res[0].content.decode()[1:-1].split(',')
         achievement_set = []
         for i in range(len(achievement)) :
-            if i % 3 == 0 : achievement_id = str(achievement[i][2:-1])
-            elif i % 3 == 1 : achievement_shoot = int(achievement[i][:])
-            elif i % 3 == 2 :
+            if i % 4 == 0 : achievement_id = str(achievement[i][2:-1]) + ', '
+            elif i % 4 == 1 : achievement_id += str(achievement[i][1:-1])
+            elif i % 4 == 2 : achievement_shoot = int(achievement[i][:])
+            elif i % 4 == 3 :
                 achievement_kill = int(achievement[i][:-1])
                 achievement_set.append([achievement_id, achievement_shoot, achievement_kill])
 
@@ -225,7 +500,7 @@ def main(scr, level, id, language):
         screen.blit(
             background, (0, 0), area=pygame.Rect(
                 0, backgroundLoc, size.x_background, scr_size))
-        backgroundLoc -= speed
+        backgroundLoc -= (speed*0.5)
         if backgroundLoc - speed <= speed:
             backgroundLoc = size.backgroundLoc
         return screen, background, backgroundLoc
@@ -254,23 +529,23 @@ def main(scr, level, id, language):
     def ingame_text_update(language) :
         if language == "ENG" :
             return [font.render("Wave: " + str(wave), 1, WHITE),
-                    font.render("Remaining Aliens: " + str(aliensLeftThisWave), 1, WHITE),
+                    font.render("Aliens Left: " + str(aliensLeftThisWave), 1, WHITE),
                     font.render("Score: " + str(score), 1, WHITE),
                     font.render("Bombs: " + str(bombsHeld), 1, WHITE),
                     font.render("Coins: "+ str(coinsHeld), 1, WHITE)]
 
         else :
             return [font2.render("웨이브: " + str(wave), 1, WHITE),
-                    font2.render("적 남은 수: " + str(aliensLeftThisWave), 1, WHITE),
+                    font2.render("남은 적: " + str(aliensLeftThisWave), 1, WHITE),
                     font2.render("점수: " + str(score), 1, WHITE),
                     font2.render("폭탄: " + str(bombsHeld), 1, WHITE),
                     font2.render("코인: "+ str(coinsHeld), 1, WHITE)]
 
     def get_achieve_record(id) :
-        data = {"id": id, "shoot": 0, "kill": 0}
-        req = grequests.post(url + '/get_achievement/', json=data)
+        data = {"id": id[0] + ',' + id[1], "shoot": 0, "kill": 0}
+        req = grequests.post(url + '/get_achievement_coop/', json=data)
         res = grequests.map([req])
-        _ , shoot_record, kill_record = res[0].content.decode()[1:-1].split(',')
+        _ , _ , shoot_record, kill_record = res[0].content.decode()[1:-1].split(',')
 
         return shoot_record, kill_record
 
@@ -322,8 +597,8 @@ def main(scr, level, id, language):
     alienPeriod = 60 / speed
     clockTime = 60  # maximum FPS
     clock = pygame.time.Clock()
-    ship = Ship2()
-    ship2 = Ship3()
+    ship = Ship4()
+    ship2 = Ship5()
     initialAlienTypes = (Siney, Spikey)
     powerupTypes = (BombPowerup, TeamshieldPowerup, DoublemissilePowerup)
     coinTypes = (CoinPowerup,CoinTwoPowerup)
@@ -349,7 +624,7 @@ def main(scr, level, id, language):
     ship_explode_sound = load_sound('ship_explode.ogg')
     load_music('music_loop.ogg')
 
-    aliennum = 20 # 아이템 나오는 alien 숫자(aliennum 이상 남은 경우)
+    aliennum = 3 # 아이템 나오는 alien 숫자(aliennum 이상 남은 경우)
     setaliennum = 10 # 4웨이브마다 초기 웨이브 수
     speedup = 0.5 # 4웨이브마다 speed += speedup
     aliennumup = 2 # 4웨이브 주기로 alienthiswave = int(alienthiswave * aliennumup)
@@ -373,7 +648,7 @@ def main(scr, level, id, language):
     coinTime = 8 * clockTime # coin 구현
     coinTimeLeft = coinTime # coin 구현
     font = pygame.font.Font(None, size.font_eng)
-    font2 = pygame.font.SysFont('hy견고딕', size.font_kor)
+    font2 = pygame.font.SysFont('nanumgothic', size.font_kor)
     inMenu = True
 
     hiScores = Database.getScores()
@@ -407,13 +682,13 @@ def main(scr, level, id, language):
                     font.render('LOGIN', 1, WHITE),
                     font.render('HIGH SCORES', 1, WHITE),
                     font.render('CREATE ACCOUNT', 1, WHITE),
-                    font.render('SOUND FX ', 1, WHITE),
-                    font.render('ON', 1, RED),
-                    font.render('OFF', 1, RED),
+                    font.render('SOUND FX', 1, WHITE),
+                    font.render('   ON', 1, RED),
+                    font.render('   OFF', 1, RED),
                     font.render('MUSIC', 1, WHITE),
                     font.render('ACHIEVEMENTS', 1, WHITE),
-                    font.render('ON', 1, RED),
-                    font.render('OFF', 1, RED),
+                    font.render('   ON', 1, RED),
+                    font.render('   OFF', 1, RED),
                     font.render('QUIT', 1, WHITE),
                     font.render('RESTART', 1, WHITE),
                     font.render('LANGUAGE', 1, WHITE),
@@ -643,7 +918,6 @@ def main(scr, level, id, language):
                 elif showAchievement :
                     showAchievement = False
                 elif selection == 1:
-                    screen = pygame.display.set_mode((size.x_background, scr_size))  # 리사이즈 불가능하도록 변경
                     inMenu = False
                     shoot_count , kill_count = 0, 0
                     ship.initializeKeys()
@@ -784,6 +1058,44 @@ def main(scr, level, id, language):
         #여기까지 버튼 구현size.button_ad
 
     while ship.alive and ship2.alive:
+
+        # resize
+        scr_x , scr_y = pygame.display.get_surface().get_size()
+        if size.x_background != scr_x or scr_size != scr_y :
+            prev_scr_size = scr_size
+            scr_size, user_size, screen, background, backgroundLoc, finalStars, font, font2, gameOverPos, gameOverText, title, titleRect, pause, pauseRect, text_eng_set, text_kor_set, startPos, startText, fxPos, fxOnPos, fxOffPos, musicPos, achievementPos, musicOnPos, musicOffPos, quitPos, languagePos, selectText, selectPos, restartPos, achievePos, next, nextRect, continue_img,continueRect, bomb_img,bombRect, shield_img,shieldRect, shield_on_img,shieldOnRect, double_img,doubleRect, double_on_img,doubleOnRect, continueText, continuePos, bombText_Item, bombItemPos, shieldText, shieldPos, doubleText, doublePos, selectItem, selectItemPos, hiScorePos, menuDict = resize(scr_x, scr_y, mode1_lvl_size)
+            shipx, shipy = ship.rect[0] * scr_size / prev_scr_size, ship.rect[1] * scr_size / prev_scr_size
+            shipspeed = ship.speed
+            shipx2, shipy2 = ship2.rect[0] * scr_size / prev_scr_size, ship2.rect[1] * scr_size / prev_scr_size
+            shipspeed2 = ship2.speed
+
+            Alien.pool = pygame.sprite.Group([alien() for alien in initialAlienTypes for _ in range(5)])
+            powerupTypes = (BombPowerup, TeamshieldPowerup, DoublemissilePowerup)
+            coinTypes = (CoinPowerup,CoinTwoPowerup)
+            Missile.pool = pygame.sprite.Group([Missile() for _ in range(10)])
+            Explosion.pool = pygame.sprite.Group([Explosion() for _ in range(10)])
+
+            for i in allsprites.sprites() :
+                for j in i.rect :
+                    j = j * scr_size / prev_scr_size
+                i.image = pygame.transform.scale(i.image, (round(i.image.get_width()* scr_size / prev_scr_size), round(i.image.get_height()*scr_size / prev_scr_size)))
+                i.rect = pygame.Rect(0, 0, i.image.get_width(), i.image.get_height())
+                i.screen = pygame.display.get_surface()
+                i.area = ship.screen.get_rect()
+
+            ship.speed = round(shipspeed * scr_size / prev_scr_size)
+            ship.shield = pygame.transform.scale(ship.shield, (round(ship.shield.get_width()* scr_size / prev_scr_size), round(ship.shield.get_height()*scr_size / prev_scr_size)))
+            ship.rect[0], ship.rect[1] = shipx, shipy
+            ship.original = ship.image
+            ship.radius = max(ship.rect.width, ship.rect.height)
+
+            ship2.speed = round(shipspeed2 * scr_size / prev_scr_size)
+            ship2.shield = pygame.transform.scale(ship2.shield, (round(ship2.shield.get_width()* scr_size / prev_scr_size), round(ship2.shield.get_height()*scr_size / prev_scr_size)))
+            ship2.rect[0], ship2.rect[1] = shipx2, shipy2
+            ship2.original = ship2.image
+            ship2.radius = max(ship2.rect.width, ship2.rect.height)
+        # resize
+
         clock.tick(clockTime)
 
         if aliensLeftThisWave >= aliennum:
@@ -873,6 +1185,49 @@ def main(scr, level, id, language):
                     menuDict = {1: restartPos, 2: hiScorePos, 3: fxPos, 4: musicPos, 5: quitPos}
                 selectPos = selectText.get_rect(topright=restartPos.topleft)
                 while inPmenu:
+
+                    # resize
+                    scr_x , scr_y = pygame.display.get_surface().get_size()
+                    if size.x_background != scr_x or scr_size != scr_y :
+                        prev_scr_size = scr_size
+                        scr_size, user_size, screen, background, backgroundLoc, finalStars, font, font2, gameOverPos, gameOverText, title, titleRect, pause, pauseRect, text_eng_set, text_kor_set, startPos, startText, fxPos, fxOnPos, fxOffPos, musicPos, achievementPos, musicOnPos, musicOffPos, quitPos, languagePos, selectText, selectPos, restartPos, achievePos, next, nextRect, continue_img,continueRect, bomb_img,bombRect, shield_img,shieldRect, shield_on_img,shieldOnRect, double_img,doubleRect, double_on_img,doubleOnRect, continueText, continuePos, bombText_Item, bombItemPos, shieldText, shieldPos, doubleText, doublePos, selectItem, selectItemPos, hiScorePos, menuDict = resize(scr_x, scr_y, mode1_lvl_size)
+                        shipx, shipy = ship.rect[0] * scr_size / prev_scr_size, ship.rect[1] * scr_size / prev_scr_size
+                        shipspeed = ship.speed
+                        shipx2, shipy2 = ship2.rect[0] * scr_size / prev_scr_size, ship2.rect[1] * scr_size / prev_scr_size
+                        shipspeed2 = ship2.speed
+
+                        Alien.pool = pygame.sprite.Group([alien() for alien in initialAlienTypes for _ in range(5)])
+                        powerupTypes = (BombPowerup, TeamshieldPowerup, DoublemissilePowerup)
+                        coinTypes = (CoinPowerup,CoinTwoPowerup)
+                        Missile.pool = pygame.sprite.Group([Missile() for _ in range(10)])
+                        Explosion.pool = pygame.sprite.Group([Explosion() for _ in range(10)])
+
+                        for i in allsprites.sprites() :
+                            for j in i.rect :
+                                j = j * scr_size / prev_scr_size
+                            i.image = pygame.transform.scale(i.image, (round(i.image.get_width()* scr_size / prev_scr_size), round(i.image.get_height()*scr_size / prev_scr_size)))
+                            i.rect = pygame.Rect(0, 0, i.image.get_width(), i.image.get_height())
+                            i.screen = pygame.display.get_surface()
+                            i.area = ship.screen.get_rect()
+
+                        ship.speed = round(shipspeed * scr_size / prev_scr_size)
+                        ship.shield = pygame.transform.scale(ship.shield, (round(ship.shield.get_width()* scr_size / prev_scr_size), round(ship.shield.get_height()*scr_size / prev_scr_size)))
+                        ship.rect[0], ship.rect[1] = shipx, shipy
+                        ship.original = ship.image
+                        ship.radius = max(ship.rect.width, ship.rect.height)
+
+                        ship2.speed = round(shipspeed2 * scr_size / prev_scr_size)
+                        ship2.shield = pygame.transform.scale(ship2.shield, (round(ship2.shield.get_width()* scr_size / prev_scr_size), round(ship2.shield.get_height()*scr_size / prev_scr_size)))
+                        ship2.rect[0], ship2.rect[1] = shipx2, shipy2
+                        ship2.original = ship2.image
+                        ship2.radius = max(ship2.rect.width, ship2.rect.height)
+
+                        if id != '':
+                            menuDict = {1: restartPos, 2: hiScorePos, 3: fxPos, 4: musicPos, 5: achievementPos , 6: quitPos}
+                        else:
+                            menuDict = {1: restartPos, 2: hiScorePos, 3: fxPos, 4: musicPos, 5: quitPos}
+                    # resize
+
                     clock.tick(clockTime)
                     screen, background, backgroundLoc = background_update(screen, background, backgroundLoc)
 
@@ -975,6 +1330,44 @@ def main(scr, level, id, language):
                 shield_on = False
                 double_on = False
                 while inCoin:
+
+                    # resize
+                    scr_x , scr_y = pygame.display.get_surface().get_size()
+                    if size.x_background != scr_x or scr_size != scr_y :
+                        prev_scr_size = scr_size
+                        scr_size, user_size, screen, background, backgroundLoc, finalStars, font, font2, gameOverPos, gameOverText, title, titleRect, pause, pauseRect, text_eng_set, text_kor_set, startPos, startText, fxPos, fxOnPos, fxOffPos, musicPos, achievementPos, musicOnPos, musicOffPos, quitPos, languagePos, selectText, selectPos, restartPos, achievePos, next, nextRect, continue_img,continueRect, bomb_img,bombRect, shield_img,shieldRect, shield_on_img,shieldOnRect, double_img,doubleRect, double_on_img,doubleOnRect, continueText, continuePos, bombText_Item, bombItemPos, shieldText, shieldPos, doubleText, doublePos, selectItem, selectItemPos, hiScorePos, menuDict = resize(scr_x, scr_y, mode1_lvl_size)
+                        shipx, shipy = ship.rect[0] * scr_size / prev_scr_size, ship.rect[1] * scr_size / prev_scr_size
+                        shipspeed = ship.speed
+                        shipx2, shipy2 = ship2.rect[0] * scr_size / prev_scr_size, ship2.rect[1] * scr_size / prev_scr_size
+                        shipspeed2 = ship2.speed
+
+                        Alien.pool = pygame.sprite.Group([alien() for alien in initialAlienTypes for _ in range(5)])
+                        powerupTypes = (BombPowerup, TeamshieldPowerup, DoublemissilePowerup)
+                        coinTypes = (CoinPowerup,CoinTwoPowerup)
+                        Missile.pool = pygame.sprite.Group([Missile() for _ in range(10)])
+                        Explosion.pool = pygame.sprite.Group([Explosion() for _ in range(10)])
+
+                        for i in allsprites.sprites() :
+                            for j in i.rect :
+                                j = j * scr_size / prev_scr_size
+                            i.image = pygame.transform.scale(i.image, (round(i.image.get_width()* scr_size / prev_scr_size), round(i.image.get_height()*scr_size / prev_scr_size)))
+                            i.rect = pygame.Rect(0, 0, i.image.get_width(), i.image.get_height())
+                            i.screen = pygame.display.get_surface()
+                            i.area = ship.screen.get_rect()
+
+                        ship.speed = round(shipspeed * scr_size / prev_scr_size)
+                        ship.shield = pygame.transform.scale(ship.shield, (round(ship.shield.get_width()* scr_size / prev_scr_size), round(ship.shield.get_height()*scr_size / prev_scr_size)))
+                        ship.rect[0], ship.rect[1] = shipx, shipy
+                        ship.original = ship.image
+                        ship.radius = max(ship.rect.width, ship.rect.height)
+
+                        ship2.speed = round(shipspeed2 * scr_size / prev_scr_size)
+                        ship2.shield = pygame.transform.scale(ship2.shield, (round(ship2.shield.get_width()* scr_size / prev_scr_size), round(ship2.shield.get_height()*scr_size / prev_scr_size)))
+                        ship2.rect[0], ship2.rect[1] = shipx2, shipy2
+                        ship2.original = ship2.image
+                        ship2.radius = max(ship2.rect.width, ship2.rect.height)
+                    # resize
+
                     clock.tick(clockTime)
                     bombCoinText = font.render("Bombs: " + str(bombsHeld), 1, WHITE)
                     coinShopText = font.render("Coins: "+ str(coinsHeld),1,WHITE)
@@ -1053,6 +1446,7 @@ def main(scr, level, id, language):
                     alien.table()
                     Explosion.position(alien.rect.center)
                     aliensLeftThisWave, kill_count, score = kill_alien(alien, aliensLeftThisWave, kill_count, score)
+                    missilesFired += 1
                     if soundFX:
                         alien_explode_sound.play()
             for missile in Missile.active:
@@ -1083,7 +1477,7 @@ def main(scr, level, id, language):
                         alien.table()
                         Explosion.position(alien.rect.center)
                         aliensLeftThisWave -= 1
-                        ship.lives -=1
+                        ship.lives -= 1
 
             if pygame.sprite.collide_rect(alien, ship2):
                 if ship2.shieldUp:
@@ -1278,23 +1672,63 @@ def main(scr, level, id, language):
     idBuffer = []
     password = ''
     pwBuffer = []
+    login_status = 3
     is_input_id = True
 
     while True:
+
+        # resize
+        scr_x , scr_y = pygame.display.get_surface().get_size()
+        if size.x_background != scr_x or scr_size != scr_y :
+            prev_scr_size = scr_size
+            scr_size, user_size, screen, background, backgroundLoc, finalStars, font, font2, gameOverPos, gameOverText, title, titleRect, pause, pauseRect, text_eng_set, text_kor_set, startPos, startText, fxPos, fxOnPos, fxOffPos, musicPos, achievementPos, musicOnPos, musicOffPos, quitPos, languagePos, selectText, selectPos, restartPos, achievePos, next, nextRect, continue_img,continueRect, bomb_img,bombRect, shield_img,shieldRect, shield_on_img,shieldOnRect, double_img,doubleRect, double_on_img,doubleOnRect, continueText, continuePos, bombText_Item, bombItemPos, shieldText, shieldPos, doubleText, doublePos, selectItem, selectItemPos, hiScorePos, menuDict = resize(scr_x, scr_y, mode1_lvl_size)
+            shipx, shipy = ship.rect[0] * scr_size / prev_scr_size, ship.rect[1] * scr_size / prev_scr_size
+            shipspeed = ship.speed
+            shipx2, shipy2 = ship2.rect[0] * scr_size / prev_scr_size, ship2.rect[1] * scr_size / prev_scr_size
+            shipspeed2 = ship2.speed
+
+            Alien.pool = pygame.sprite.Group([alien() for alien in initialAlienTypes for _ in range(5)])
+            powerupTypes = (BombPowerup, TeamshieldPowerup, DoublemissilePowerup)
+            coinTypes = (CoinPowerup,CoinTwoPowerup)
+            Missile.pool = pygame.sprite.Group([Missile() for _ in range(10)])
+            Explosion.pool = pygame.sprite.Group([Explosion() for _ in range(10)])
+
+            for i in allsprites.sprites() :
+                for j in i.rect :
+                    j = j * scr_size / prev_scr_size
+                i.image = pygame.transform.scale(i.image, (round(i.image.get_width()* scr_size / prev_scr_size), round(i.image.get_height()*scr_size / prev_scr_size)))
+                i.rect = pygame.Rect(0, 0, i.image.get_width(), i.image.get_height())
+                i.screen = pygame.display.get_surface()
+                i.area = ship.screen.get_rect()
+
+            ship.speed = round(shipspeed * scr_size / prev_scr_size)
+            ship.shield = pygame.transform.scale(ship.shield, (round(ship.shield.get_width()* scr_size / prev_scr_size), round(ship.shield.get_height()*scr_size / prev_scr_size)))
+            ship.rect[0], ship.rect[1] = shipx, shipy
+            ship.original = ship.image
+            ship.radius = max(ship.rect.width, ship.rect.height)
+
+            ship2.speed = round(shipspeed2 * scr_size / prev_scr_size)
+            ship2.shield = pygame.transform.scale(ship2.shield, (round(ship2.shield.get_width()* scr_size / prev_scr_size), round(ship2.shield.get_height()*scr_size / prev_scr_size)))
+            ship2.rect[0], ship2.rect[1] = shipx2, shipy2
+            ship2.original = ship2.image
+            ship2.radius = max(ship2.rect.width, ship2.rect.height)
+        # resize
+
         clock.tick(clockTime)
         # login event handling
         if showLogin == True :
             for event in pygame.event.get():
-                if is_input_id :
-                    if (event.type == pygame.QUIT
+                if (event.type == pygame.QUIT
                         or not showLogin
                         and event.type == pygame.KEYDOWN
-                            and event.key == pygame.K_ESCAPE):
-                        pygame.quit()
-                        sys.exit()
-                    elif (event.type == pygame.KEYDOWN
+                        and event.key == pygame.K_ESCAPE):
+                    pygame.quit()
+                    sys.exit()
+
+                elif login_status == 3 :
+                    if (event.type == pygame.KEYDOWN
                         and event.key in Keyboard.keys.keys()
-                        and len(idBuffer) < id_len):
+                        and len(idBuffer) < id_len) :
                         idBuffer.append(Keyboard.keys[event.key])
                         id = ''.join(idBuffer)
                     elif (event.type == pygame.KEYDOWN
@@ -1305,15 +1739,10 @@ def main(scr, level, id, language):
                     elif (event.type == pygame.KEYDOWN
                         and event.key == pygame.K_RETURN
                         and len(id) > 0):
-                        is_input_id = False
-                else :
-                    if (event.type == pygame.QUIT
-                        or not showLogin
-                        and event.type == pygame.KEYDOWN
-                            and event.key == pygame.K_ESCAPE):
-                        pygame.quit()
-                        sys.exit()
-                    elif (event.type == pygame.KEYDOWN
+                        login_status -= 1
+
+                elif login_status == 2 :
+                    if (event.type == pygame.KEYDOWN
                         and event.key in Keyboard.keys.keys()
                         and len(pwBuffer) < pw_len):
                         pwBuffer.append(Keyboard.keys[event.key])
@@ -1326,13 +1755,54 @@ def main(scr, level, id, language):
                     elif (event.type == pygame.KEYDOWN
                         and event.key == pygame.K_RETURN
                         and len(password) > 0):
-                        is_input_id, inMenu, ship.alive, ship2.alive, showLogin = True, True, True, True, False
                         data = {"id": id, "password": password}
                         req = grequests.post(url + '/login/', json=data)
                         res = grequests.map([req])
+                        idBuffer = []
+                        pwBuffer = []
+                        id_temp = id
+                        id = ''
+                        password = ''
+                        login_status -= 1
+
+                elif login_status == 1 :
+                    if (event.type == pygame.KEYDOWN
+                        and event.key in Keyboard.keys.keys()
+                        and len(idBuffer) < id_len):
+                        idBuffer.append(Keyboard.keys[event.key])
+                        id = ''.join(idBuffer)
+                    elif (event.type == pygame.KEYDOWN
+                        and event.key == pygame.K_BACKSPACE
+                        and len(idBuffer) > 0):
+                        idBuffer.pop()
+                        id = ''.join(idBuffer)
+                    elif (event.type == pygame.KEYDOWN
+                        and event.key == pygame.K_RETURN
+                        and len(id) > 0):
+                        login_status -= 1
+
+                else :
+                    if (event.type == pygame.KEYDOWN
+                        and event.key in Keyboard.keys.keys()
+                        and len(pwBuffer) < pw_len):
+                        pwBuffer.append(Keyboard.keys[event.key])
+                        password = ''.join(pwBuffer)
+                    elif (event.type == pygame.KEYDOWN
+                        and event.key == pygame.K_BACKSPACE
+                        and len(pwBuffer) > 0):
+                        pwBuffer.pop()
+                        password = ''.join(pwBuffer)
+                    elif (event.type == pygame.KEYDOWN
+                        and event.key == pygame.K_RETURN
+                        and len(password) > 0):
+                        login_status, inMenu, ship.alive, ship2.alive, showLogin = 3, True, True, True, False
+                        data = {"id": id, "password": password}
+                        req = grequests.post(url + '/login/', json=data)
+                        res2 = grequests.map([req])
+                        id = [id_temp, id]
                         if req.response == None : return scr_size, level_size, '', language
-                        if res[0].content == b'"Login Success"' :
-                            data = {"id": id, "language": ''}
+                        if res[0].content == b'"Login Success"' and res2[0].content == b'"Login Success"':
+                            data = {"id": id[0], "language": ''}
                             req = grequests.post(url + '/get_language/', json=data)
                             res = grequests.map([req])
                             if req.response == None : return scr_size, level_size, '', language
@@ -1430,20 +1900,20 @@ def main(scr, level, id, language):
                     Database.setScore(hiScores, (name, score, accuracy))
                     return scr_size, level_size, id, language
 
-        else : # 로그인 상태 기록 저장(화면을 만들어야 함)
-            data = {"id": id, "score": score, "accuracy": accuracy}
-            req = grequests.post(url + '/save_record/', json=data)
+        else :
+            data = {"id": id[0] + ',' + id[1], "score": score, "accuracy": accuracy}
+            req = grequests.post(url + '/save_record_coop/', json=data)
             res = grequests.map([req])
             if req.response == None : return scr_size, level_size, '', language
             print(res[0].content)
-            data = {"id": id, "shoot": shoot_count, "kill": kill_count}
-            req = grequests.post(url + '/record_achievement/', json=data)
+            data = {"id": id[0] + ',' + id[1], "shoot": shoot_count, "kill": kill_count}
+            req = grequests.post(url + '/record_achievement_coop/', json=data)
             res = grequests.map([req])
             if req.response == None : return scr_size, level_size, '', language
             print(res[0].content)
             return scr_size, level_size, id, language
 
-        if isHiScore: # 로그인 상태일 때, 수정 필요
+        if isHiScore:
             hiScorePos = hiScoreText.get_rect(midbottom=screen.get_rect().center)
             scoreText = font.render(str(score), 1, WHITE)
             scorePos = scoreText.get_rect(midtop=hiScorePos.midbottom)

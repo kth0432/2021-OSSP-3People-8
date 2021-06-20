@@ -168,6 +168,10 @@ class BombPowerup(Powerup):
         super().__init__('bomb')
         self.pType = 'bomb'
 
+class DistPowerup(Powerup):
+    def __init__(self):
+        super().__init__('dist')
+        self.pType = 'dist'
 
 class ShieldPowerup(Powerup):
     def __init__(self):
@@ -260,72 +264,6 @@ class Ship(MasterSprite):
             self.img_rect.y = y
             surface.blit(self.image, self.img_rect)
 
-class Ship2(MasterSprite):
-    def __init__(self):
-        super().__init__()
-        self.image, self.rect = load_image('ship2.png', -1)
-        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*size.ratio_user), round(self.image.get_height()*size.ratio_user)))
-        self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
-        self.original = self.image
-        self.shield, self.rect = load_image('ship2_shield.png', -1)
-        self.shield = pygame.transform.scale(self.shield, (round(self.shield.get_width()*size.ratio_user), round(self.shield.get_height()*size.ratio_user)))
-        self.rect = pygame.Rect(0, 0, self.shield.get_width(), self.shield.get_height())
-        self.screen = pygame.display.get_surface()
-        self.area = self.screen.get_rect()
-        self.rect.midbottom = (size.right, scr_size)
-        self.radius = max(self.rect.width, self.rect.height)
-        self.alive = True
-        self.shieldUp = False
-        self.vert = 0
-        self.horiz = 0
-        self.lives = 3
-
-    def initializeKeys(self):
-        keyState = pygame.key.get_pressed()
-        self.vert = 0
-        self.horiz = 0
-        if keyState[pygame.K_w]:
-            self.vert -= MasterSprite.speed * size.masterspritespeed
-        if keyState[pygame.K_a]:
-            self.horiz -= MasterSprite.speed * size.masterspritespeed
-        if keyState[pygame.K_s]:
-            self.vert += MasterSprite.speed * size.masterspritespeed
-        if keyState[pygame.K_d]:
-            self.horiz += MasterSprite.speed * size.masterspritespeed
-
-    def update(self):
-        newpos = self.rect.move((self.horiz, self.vert))
-        newhoriz = self.rect.move((self.horiz, 0))
-        newvert = self.rect.move((0, self.vert))
-
-        if not (newpos.left <= self.area.left
-                or newpos.top <= self.area.top
-                or newpos.right >= self.area.right
-                or newpos.bottom >= self.area.bottom):
-            self.rect = newpos
-        elif not (newhoriz.left <= self.area.left
-                  or newhoriz.right >= self.area.right):
-            self.rect = newhoriz
-        elif not (newvert.top <= self.area.top
-                  or newvert.bottom >= self.area.bottom):
-            self.rect = newvert
-
-        if self.shieldUp and self.image != self.shield:
-            self.image = self.shield
-
-        if not self.shieldUp and self.image != self.original:
-            self.image = self.original
-
-    def bomb(self):
-        return Bomb(self)
-
-    ## life 구현부분
-    def draw_lives(self, surface, x, y):
-        for i in range(self.lives):
-            self.img_rect = self.image.get_rect()
-            self.img_rect.x = x + size.lives * i
-            self.img_rect.y = y + size.lives
-            surface.blit(self.image, self.img_rect)
 
 class Ship2(MasterSprite):
     def __init__(self):
@@ -345,7 +283,7 @@ class Ship2(MasterSprite):
         self.shieldUp = False
         self.vert = 0
         self.horiz = 0
-        self.lives = 2
+        self.lives = 3
 
     def initializeKeys(self):
         self.vert = 0
@@ -370,7 +308,7 @@ class Ship2(MasterSprite):
 
         if self.shieldUp and self.image != self.shield:
             self.image = self.shield
-            
+
 
         if not self.shieldUp and self.image != self.original:
             self.image = self.original
@@ -405,7 +343,7 @@ class Ship3(MasterSprite):
         self.shieldUp = False
         self.vert = 0
         self.horiz = 0
-        self.lives = 2
+        self.lives = 3
 
     def initializeKeys(self):
         self.vert = 0
@@ -422,6 +360,124 @@ class Ship3(MasterSprite):
                 or newpos.bottom >= self.area.bottom):
             self.rect = newpos
         elif not (newhoriz.left <= scr_size
+                  or newhoriz.right >= self.area.right):
+            self.rect = newhoriz
+        elif not (newvert.top <= self.area.top
+                  or newvert.bottom >= self.area.bottom):
+            self.rect = newvert
+
+        if self.shieldUp and self.image != self.shield:
+            self.image = self.shield
+
+        if not self.shieldUp and self.image != self.original:
+            self.image = self.original
+
+    def bomb(self):
+        return Bomb(self)
+
+    ## life 구현부분
+    def draw_lives(self, surface, x, y):
+        for i in range(self.lives):
+            self.img_rect = self.image.get_rect()
+            self.img_rect.x = scr_size + x + size.lives * i
+            self.img_rect.y = y + size.lives
+            surface.blit(self.image, self.img_rect)
+
+class Ship4(MasterSprite):
+    def __init__(self):
+        super().__init__()
+        self.image, self.rect = load_image('ship.png', -1)
+        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*size.ratio_user), round(self.image.get_height()*size.ratio_user)))
+        self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
+        self.original = self.image
+        self.shield, self.rect = load_image('ship_shield.png', -1)
+        self.shield = pygame.transform.scale(self.shield, (round(self.shield.get_width()*size.ratio_user), round(self.shield.get_height()*size.ratio_user)))
+        self.rect = pygame.Rect(0, 0, self.shield.get_width(), self.shield.get_height())
+        self.screen = pygame.display.get_surface()
+        self.area = self.screen.get_rect()
+        self.rect.midbottom = (scr_size * 0.5, scr_size)
+        self.radius = max(self.rect.width, self.rect.height)
+        self.alive = True
+        self.shieldUp = False
+        self.vert = 0
+        self.horiz = 0
+        self.lives = 3
+
+    def initializeKeys(self):
+        self.vert = 0
+        self.horiz = 0
+
+    def update(self):
+        newpos = self.rect.move((self.horiz, self.vert))
+        newhoriz = self.rect.move((self.horiz, 0))
+        newvert = self.rect.move((0, self.vert))
+
+        if not (newpos.left <= self.area.left
+                or newpos.top <= self.area.top
+                or newpos.right >= self.area.right
+                or newpos.bottom >= self.area.bottom):
+            self.rect = newpos
+        elif not (newhoriz.left <= self.area.left
+                  or newhoriz.right >= self.area.right) :
+            self.rect = newhoriz
+        elif not (newvert.top <= self.area.top
+                  or newvert.bottom >= self.area.bottom):
+            self.rect = newvert
+
+        if self.shieldUp and self.image != self.shield:
+            self.image = self.shield
+
+
+        if not self.shieldUp and self.image != self.original:
+            self.image = self.original
+
+    def bomb(self):
+        return Bomb(self)
+
+    ## life 구현부분
+    def draw_lives(self, surface, x, y):
+        for i in range(self.lives):
+            self.img_rect = self.image.get_rect()
+            self.img_rect.x = x + size.lives * i
+            self.img_rect.y = y + size.lives
+            surface.blit(self.image, self.img_rect)
+
+
+class Ship5(MasterSprite):
+    def __init__(self):
+        super().__init__()
+        self.image, self.rect = load_image('ship2.png', -1)
+        self.image = pygame.transform.scale(self.image, (round(self.image.get_width()*size.ratio_user), round(self.image.get_height()*size.ratio_user)))
+        self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
+        self.original = self.image
+        self.shield, self.rect = load_image('ship2_shield.png', -1)
+        self.shield = pygame.transform.scale(self.shield, (round(self.shield.get_width()*size.ratio_user), round(self.shield.get_height()*size.ratio_user)))
+        self.rect = pygame.Rect(0, 0, self.shield.get_width(), self.shield.get_height())
+        self.screen = pygame.display.get_surface()
+        self.area = self.screen.get_rect()
+        self.rect.midbottom = (scr_size * 1.5, scr_size)
+        self.radius = max(self.rect.width, self.rect.height)
+        self.alive = True
+        self.shieldUp = False
+        self.vert = 0
+        self.horiz = 0
+        self.lives = 3
+
+    def initializeKeys(self):
+        self.vert = 0
+        self.horiz = 0
+
+    def update(self):
+        newpos = self.rect.move((self.horiz, self.vert))
+        newhoriz = self.rect.move((self.horiz, 0))
+        newvert = self.rect.move((0, self.vert))
+
+        if not (newpos.left <= self.area.left
+                or newpos.top <= self.area.top
+                or newpos.right >= self.area.right
+                or newpos.bottom >= self.area.bottom):
+            self.rect = newpos
+        elif not (newhoriz.left <= self.area.left
                   or newhoriz.right >= self.area.right):
             self.rect = newhoriz
         elif not (newvert.top <= self.area.top
