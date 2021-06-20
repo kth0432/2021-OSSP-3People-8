@@ -10,6 +10,9 @@ language_list = ['ENG', 'KOR']
 record_list = [['A', 40, 0.4]]
 achievement_list = [['A', 100 , 40]]
 
+coop_record_list = [['A', 'AA', 40, 0.4]]
+coop_achievement_list = [['A', 'AA', 100 , 40]]
+
 class Account(BaseModel):
     id: str
     password: str
@@ -45,12 +48,13 @@ async def create_id(account: Account):
     else :
         return "Exist same ID"
 
+
 @app.post("/login/")
 async def find_id(account: Account):
     for i in range(len(id_list)) :
         if id_list[i] == account.id :
             if pw_list[i] == account.password :
-                return "Login Successed"
+                return "Login Success"
     return "Login Failed"
 
 @app.post("/record_language/")
@@ -101,9 +105,60 @@ async def get_achievement(achievement: Achievement):
             return achievement_list[i]
     return "Not found"
 
-@app.get("/get_get_achievementlist/")
-async def get_achievementlist():
+@app.get("/get_achievementlist/")
+async def get_achevementlist() :
     return achievement_list
+
+# coop
+
+@app.post("/save_record_coop/")
+async def score_record(record: Record):
+    id, id2 = record.id.split(',')
+    coop_record_list.append([id, id2, record.score, record.accuracy])
+    return "Saved Successfully"
+
+@app.get("/get_record_coop/")
+async def get_record():
+    return coop_record_list
+
+@app.post("/record_achievement_coop/")
+async def get_achievement(achievement: Achievement):
+    id, id2 = achievement.id.split(',')
+    for i in range(len(coop_achievement_list)) :
+        if coop_achievement_list[i][0] == id :
+            if coop_achievement_list[i][1] == id2 :
+                coop_achievement_list[i][2] += achievement.shoot
+                coop_achievement_list[i][3] += achievement.kill
+                return "Saved Successfully"
+        if coop_achievement_list[i][1] == id :
+            if coop_achievement_list[i][0] == id2 :
+                coop_achievement_list[i][2] += achievement.shoot
+                coop_achievement_list[i][3] += achievement.kill
+                return "Saved Successfully"
+    
+    coop_achievement_list.append([id, id2, achievement.shoot, achievement.kill])
+    return "Saved Successfully"
+
+@app.post("/get_achievement_coop/")
+async def get_achievement(achievement: Achievement):
+    id, id2 = achievement.id.split(',')
+    for i in range(len(coop_achievement_list)) :
+        if coop_achievement_list[i][0] == id :
+            if coop_achievement_list[i][1] == id2 :
+                return coop_achievement_list[i]
+        if coop_achievement_list[i][1] == id :
+            if coop_achievement_list[i][0] == id2 :
+                return coop_achievement_list[i]
+    coop_achievement_list.append([id, id2, achievement.shoot, achievement.kill])
+    return coop_achievement_list[-1]
+
+@app.post("/login_coop/")
+async def find_id(account: Account):
+    for i in range(len(id_list)) :
+        if id_list[i] == account.id :
+            if pw_list[i] == account.password :
+                return "Login Success"
+    return "Login Failed"
 
 
 # ================================================================================
